@@ -1,0 +1,35 @@
+{
+  "name": "backend",
+  "module": "app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/app.js",
+    "start": "bun src/app.js",
+    "build": "bun build ./src/app.js --target node --outfile dist/app.js",
+    "clean": "rm -rf node_modules && bun install"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
+    "class-validator": "^0.14.1",
+    "connect-mongo": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "express-session": "^1.18.1",
+    "helmet": "^8.0.0",
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.2",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12",
+    "validator": "^13.12.0",
+    "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.1",
+    "bun-types": "^1.1.36",
+    "typescript": "^5.6.3"
+  }
+}

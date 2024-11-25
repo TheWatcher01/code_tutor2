@@ -1,0 +1,7 @@
+[alias]
+"@/*" = "./src/*"
+"@config/*" = "./src/config/*"
+"@controllers/*" = "./src/controllers/*"
+"@middleware/*" = "./src/middleware/*"
+"@models/*" = "./src/models/*"
+"@routes/*" = "./src/routes/*"
