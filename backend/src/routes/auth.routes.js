@@ -6,68 +6,49 @@ import logger from "../services/backendLogger.js";
 
 const router = Router();
 
-// Middleware to log auth attempts
-const logAuthAttempt = (req, res, next) => {
-  logger.info("Authentication attempt", {
-    path: req.path,
-    ip: req.ip,
-    userAgent: req.headers["user-agent"],
+// Auth status
+router.get("/status", (req, res) => {
+  logger.debug("[Auth] Status check", { 
+    isAuthenticated: req.isAuthenticated(),
+    userId: req.user?.id 
   });
-  next();
-};
+  res.json({ 
+    isAuthenticated: req.isAuthenticated(),
+    user: req.user 
+  });
+});
 
-// Initialize GitHub authentication
-router.get(
-  "/github",
-  logAuthAttempt,
+// GitHub auth init
+router.get("/github", 
+  (req, res, next) => {
+    logger.info("[Auth] Starting GitHub auth", { sessionId: req.sessionID });
+    next();
+  },
   passport.authenticate("github", { scope: ["user:email"] })
 );
 
-// GitHub callback route
-router.get(
-  "/github/callback",
-  logAuthAttempt,
+// GitHub callback
+router.get("/github/callback",
+  (req, res, next) => {
+    logger.info("[Auth] GitHub callback received", { 
+      code: !!req.query.code,
+      sessionId: req.sessionID 
+    });
+    next();
+  },
   passport.authenticate("github", {
-    failureRedirect: "/login",
-    failureMessage: true,
-  }),
-  (req, res) => {
-    logger.info("Successful GitHub authentication", { userId: req.user.id });
-    res.redirect(`${process.env.CORS_ORIGIN}/playground`);
-  }
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`,
+    successRedirect: `${process.env.FRONTEND_URL}/playground`,
+  })
 );
 
-// Check authentication status
-router.get("/status", (req, res) => {
-  if (req.isAuthenticated()) {
-    logger.debug("Auth status check - Authenticated", { userId: req.user.id });
-    res.json({
-      isAuthenticated: true,
-      user: req.user,
-    });
-  } else {
-    logger.debug("Auth status check - Not authenticated");
-    res.json({
-      isAuthenticated: false,
-    });
-  }
-});
-
-// Logout route
+// Logout
 router.post("/logout", (req, res) => {
-  if (req.user) {
-    logger.info("User logout", { userId: req.user.id });
-    req.logout((err) => {
-      if (err) {
-        logger.error("Error during logout", { error: err.message });
-        return res.status(500).json({ error: "Error during logout" });
-      }
-      res.json({ message: "Logged out successfully" });
-    });
-  } else {
-    logger.debug("Logout attempted without active session");
-    res.json({ message: "No active session" });
-  }
+  logger.info("[Auth] Logout request", { userId: req.user?.id });
+  req.logout(() => {
+    logger.info("[Auth] Logout successful");
+    res.json({ success: true });
+  });
 });
 
 export default router;

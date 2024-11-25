@@ -5,64 +5,50 @@ import MongoStore from "connect-mongo";
 import logger from "../services/backendLogger.js";
 
 const initializeSession = (app) => {
-  logger.info("Initializing session configuration");
+  logger.info("[Session Config] Starting initialization");
 
-  // Session store configuration
-  const sessionStore = MongoStore.create({
+  const store = MongoStore.create({
     mongoUrl: process.env.MONGODB_URI,
-    ttl: 24 * 60 * 60, // Session TTL (1 day)
-    crypto: {
-      secret: process.env.SESSION_SECRET,
-    },
+    ttl: 24 * 60 * 60
   });
 
-  // Log session store events
-  sessionStore.on("create", (sessionId) => {
-    logger.debug("New session created", { sessionId });
-  });
+  // Log les événements de session
+  store.on("create", (sessionId) => 
+    logger.debug("[Session Store] Session created", { sessionId }));
+  store.on("destroy", (sessionId) => 
+    logger.debug("[Session Store] Session destroyed", { sessionId }));
 
-  sessionStore.on("touch", (sessionId) => {
-    logger.debug("Session touched/updated", { sessionId });
-  });
-
-  sessionStore.on("destroy", (sessionId) => {
-    logger.debug("Session destroyed", { sessionId });
-  });
-
-  // Session middleware configuration
   const sessionConfig = {
-    store: sessionStore,
+    store,
     secret: process.env.SESSION_SECRET,
-    name: "code.tutor.sid", // Custom session ID cookie name
+    name: process.env.SESSION_COOKIE_NAME,
     resave: false,
     saveUninitialized: false,
-    rolling: true, // Reset cookie maxAge on each response
     cookie: {
-      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000, // Cookie expiry (1 day)
-    },
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000
+    }
   };
 
-  // Apply session middleware
+  logger.debug("[Session Config] Session configuration", {
+    cookieName: sessionConfig.name,
+    cookieSecure: sessionConfig.cookie.secure
+  });
+
   app.use(session(sessionConfig));
 
-  // Session monitoring middleware
+  // Log middleware de session
   app.use((req, res, next) => {
-    if (req.session) {
-      // Log session activity on each request
-      logger.debug("Session activity", {
-        sessionId: req.sessionID,
-        path: req.path,
-        authenticated: req.isAuthenticated(),
-        userId: req.user?.id,
-      });
-    }
+    logger.debug("[Session Config] Session middleware", {
+      sessionID: req.sessionID,
+      isNewSession: req.session.isNew
+    });
     next();
   });
 
-  logger.info("Session configuration completed");
+  logger.info("[Session Config] Initialization completed");
 };
 
 export default initializeSession;

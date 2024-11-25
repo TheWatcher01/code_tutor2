@@ -1,4 +1,4 @@
-// /src/components/auth/ProtectedRoute.jsx
+// File path: code_tutor2/frontend/src/components/auth/ProtectedRoute.jsx
 
 import PropTypes from "prop-types";
 import { useEffect } from "react";

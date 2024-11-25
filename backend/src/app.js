@@ -2,142 +2,84 @@
 
 import express from "express";
 import logger from "./services/backendLogger.js";
+import passport from "passport";
 import initializeApp from "./config/app.config.js";
 import initializePassport from "./config/passport.config.js";
 import initializeSession from "./config/session.config.js";
 import initializeDatabase from "./config/database.config.js";
 import authRoutes from "./routes/auth.routes.js";
 import mongoose from "mongoose";
-import { createServer } from "http";
 
 const app = express();
-const port = 3000;
-let server = null;
+const port = process.env.PORT || 3000;
 
-// Function to check if port is available
-const isPortAvailable = async (port) => {
-  return new Promise((resolve) => {
-    const testServer = createServer()
-      .listen(port, () => {
-        testServer.close();
-        resolve(true);
-      })
-      .on("error", () => {
-        resolve(false);
-      });
-  });
-};
-
-// Graceful shutdown handler
-const gracefulShutdown = async (signal) => {
-  logger.info("Server", `${signal} received. Starting graceful shutdown...`);
-
+// Initialize Express application
+const initialize = async () => {
   try {
-    // Close HTTP Server
-    if (server) {
-      await new Promise((resolve) => server.close(resolve));
-      logger.info("Server", "HTTP server closed");
-    }
+    logger.info("[Server] Starting initialization");
 
-    // Close MongoDB connection
-    if (mongoose.connection.readyState === 1) {
-      await mongoose.connection.close();
-      logger.info("Database", "MongoDB connection closed");
-    }
+    // 1. Database
+    await initializeDatabase();
+    logger.info("[Server] Database initialized");
 
-    logger.info("Server", "Graceful shutdown completed");
-    process.exit(0);
+    // 2. Express middleware & CORS
+    initializeApp(app);
+    logger.info("[Server] Core middleware initialized");
+
+    // 3. Session AVANT passport
+    await initializeSession(app);
+    logger.info("[Server] Session initialized");
+
+    // 4. Initialiser passport et ses middleware
+    app.use(passport.initialize());
+    app.use(passport.session());
+    initializePassport(); // Ne pas passer app en paramètre
+    logger.info("[Server] Passport initialized");
+
+    // 5. Routes
+    app.use("/api/auth", authRoutes);
+    logger.info("[Server] Routes mounted");
+
+    return app;
   } catch (error) {
-    logger.error("Server", "Error during shutdown", {
-      error: error.message,
-      stack: error.stack,
-    });
-    process.exit(1);
+    logger.error("[Server] Initialization failed", { error: error.message });
+    throw error;
   }
 };
 
-// Initialize database and start server
+// Start the server
 const startServer = async () => {
   try {
-    logger.info("Server", "Starting application initialization");
+    await initialize();
 
-    // Check if port is available
-    const portAvailable = await isPortAvailable(port);
-    if (!portAvailable) {
-      logger.error(
-        "Server",
-        `Port ${port} is already in use. Please stop the other server first.`
-      );
-      process.exit(1);
-    }
-
-    // Initialize MongoDB connection, collections and indexes
-    await initializeDatabase();
-
-    // Initialize Express configurations
-    initializeApp(app);
-    initializeSession(app);
-    initializePassport();
-
-    // Routes
-    app.use("/api/auth", authRoutes);
-
-    // Health check endpoint
-    app.get("/health", (req, res) => {
-      res.json({
-        status: "ok",
-        environment: process.env.NODE_ENV,
-        timestamp: new Date().toISOString(),
-      });
-    });
-
-    // Start server
-    server = app.listen(port, () => {
-      logger.info("Server", "Server started successfully", {
+    const server = app.listen(port, () => {
+      logger.info("Server", "Server is running", {
         port,
-        environment: process.env.NODE_ENV,
-        nodeVersion: process.version,
+        mode: process.env.NODE_ENV || "development",
+        url: `http://localhost:${port}`,
       });
     });
 
-    // Handle server errors
-    server.on("error", (error) => {
-      logger.error("Server", "Server error occurred", {
-        error: error.message,
-        stack: error.stack,
-      });
-      process.exit(1);
-    });
+    const shutdown = async (signal) => {
+      try {
+        await new Promise((resolve) => server.close(resolve));
+        await mongoose.connection.close();
+        logger.info("Server", "Cleanup completed");
+        process.exit(0);
+      } catch (err) {
+        logger.error("Server", "Error during cleanup");
+        process.exit(1);
+      }
+    };
 
-    // Setup signal handlers for graceful shutdown
-    process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
-    process.on("SIGINT", () => gracefulShutdown("SIGINT"));
-    process.on("SIGQUIT", () => gracefulShutdown("SIGQUIT"));
-
-    // Handle uncaught errors
-    process.on("uncaughtException", (error) => {
-      logger.error("Server", "Uncaught exception", {
-        error: error.message,
-        stack: error.stack,
-      });
-      gracefulShutdown("UNCAUGHT_EXCEPTION");
-    });
-
-    process.on("unhandledRejection", (reason, promise) => {
-      logger.error("Server", "Unhandled rejection", {
-        reason,
-        promise,
-      });
-      gracefulShutdown("UNHANDLED_REJECTION");
-    });
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
   } catch (error) {
-    logger.error("Server", "Failed to start server", {
-      error: error.message,
-      stack: error.stack,
-    });
+    logger.error("Server", "Failed to start server", { error: error.message });
     process.exit(1);
   }
 };
 
-// Start the application
 startServer();
+
+export default app;

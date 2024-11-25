@@ -2,12 +2,14 @@
 
 import { createContext } from "react";
 
-// Create the context with a default shape
 const AuthContext = createContext({
   user: null,
   loading: true,
   error: null,
+  setError: () => {},
+  setUser: () => {},
   logout: () => Promise.resolve(),
+  checkAuth: () => Promise.resolve(),
   isAuthenticated: false,
 });
 
