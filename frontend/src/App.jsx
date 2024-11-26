@@ -31,10 +31,11 @@ const GitHubCallback = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Log callback info with location search
     logger.info("GitHubCallback", "Processing GitHub OAuth callback", {
       search: location.search,
     });
-  }, [location]);
+  }, [location.search]); // Added location.search as dependency
 
   return (
     <div className="min-h-screen flex items-center justify-center">
@@ -60,18 +61,17 @@ const AppComponent = () => {
   }, []);
 
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="code-tutor-theme">
-      <AuthProvider>
-        <BrowserRouter
-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-        >
+    <BrowserRouter       future={{
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    }}
+    >
+      <ThemeProvider defaultTheme="dark" storageKey="code-tutor-theme">
+        <AuthProvider>
           <RouteLogger />
           <Routes>
-            {/* Public routes */}
             <Route path="/" element={<Home />} />
             <Route path="/auth/github/callback" element={<GitHubCallback />} />
-
-            {/* Protected routes */}
             <Route
               path="/playground"
               element={
@@ -80,8 +80,6 @@ const AppComponent = () => {
                 </ProtectedRoute>
               }
             />
-
-            {/* Fallback route */}
             <Route
               path="*"
               element={
@@ -99,9 +97,9 @@ const AppComponent = () => {
             />
           </Routes>
           <Toaster />
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 };
 
@@ -160,7 +158,6 @@ ErrorBoundary.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-// Export wrapped App with ErrorBoundary
 export default function App() {
   return (
     <ErrorBoundary>

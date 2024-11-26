@@ -1,4 +1,4 @@
-// /src/services/frontendLogger.js
+// File path: code_tutor2/frontend/src/services/frontendLogger.js
 
 const LOG_LEVELS = {
   DEBUG: "DEBUG",

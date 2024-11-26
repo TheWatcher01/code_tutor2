@@ -9,8 +9,9 @@
     "clean": "rm -rf node_modules && bun install"
   },
   "dependencies": {
-    "axios": "^1.7.7",
+    "axios": "^1.7.8",
     "bcrypt": "^5.1.1",
+    "callsites": "^4.2.0",
     "class-validator": "^0.14.1",
     "connect-mongo": "^5.1.0",
     "cors": "^2.8.5",
@@ -24,12 +25,14 @@
     "mongoose": "^8.8.2",
     "passport": "^0.7.0",
     "passport-github2": "^0.1.12",
+    "uuid": "^11.0.3",
     "validator": "^13.12.0",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.9.1",
-    "bun-types": "^1.1.36",
-    "typescript": "^5.6.3"
+    "@types/node": "^22.10.0",
+    "bun-types": "^1.1.37",
+    "typescript": "^5.7.2"
   }
 }
