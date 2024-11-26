@@ -42,14 +42,16 @@ const MemoizedCodeEditor = memo(CodeEditor);
 const Navbar = memo(({ isMobile }) => {
   return (
     <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center justify-between">
+      <div className="container flex h-14 items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Code2 className="h-6 w-6" />
           <h1 className="text-xl font-bold">Code Tutor</h1>
         </div>
-        <div className="flex items-center gap-2">
-          {!isMobile && <LogoutButton />}
-        </div>
+        {!isMobile && (
+          <div className="flex items-center">
+            <LogoutButton className="ml-4" />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -126,7 +128,7 @@ const Playground = () => {
   // Desktop layout component
   const DesktopLayout = useCallback(
     () => (
-      <div className="flex flex-col h-screen">
+      <div className="flex flex-col h-screen w-screen">
         <Navbar isMobile={false} />
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel
@@ -174,7 +176,7 @@ const Playground = () => {
                     </Button>
                   )}
                 </div>
-                <span className="font-medium">Éditeur</span>
+                <span className="font-medium flex-1 text-center">Éditeur</span>
               </div>
               <div className="flex-1">
                 <MemoizedCodeEditor onChange={handleCodeChange} />
@@ -191,7 +193,9 @@ const Playground = () => {
               >
                 <div className="h-full flex flex-col">
                   <div className="border-b p-2 flex justify-between items-center">
-                    <h3 className="font-medium">Prévisualisation</h3>
+                    <h3 className="font-medium text-center flex-1">
+                      Prévisualisation
+                    </h3>
                     <Button
                       variant="ghost"
                       size="icon"
