@@ -200,3 +200,7 @@ dist
 .DS_Store
 
 *.env
+
+# Bun
+bun.lockb
+*.lockb
