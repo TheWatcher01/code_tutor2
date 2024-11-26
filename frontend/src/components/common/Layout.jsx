@@ -10,7 +10,7 @@ const Layout = ({ children }) => {
   logger.debug("Layout", "Rendering main layout");
 
   return (
-    <div className="relative min-h-screen flex flex-col">
+    <div className="relative min-h-screen flex flex-col w-screen">
       {/* Header */}
       <Header />
 
