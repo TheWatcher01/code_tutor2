@@ -1,29 +1,47 @@
 // File path: code_tutor2/frontend/src/components/code_playground/VideoPlayer.jsx
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
+import FrontendLogger from "@/services/frontendLogger";
 
 const VideoPlayer = ({ videoUrl, title }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    FrontendLogger.info("VideoPlayer", "Component mounted", { videoUrl, title });
+    return () => {
+      FrontendLogger.info("VideoPlayer", "Component unmounted");
+    };
+  }, [videoUrl, title]);
 
   const togglePlay = () => {
-    const video = document.querySelector("video");
+    const video = videoRef.current;
     if (isPlaying) {
       video.pause();
+      FrontendLogger.debug("VideoPlayer", "Video paused");
     } else {
-      video.play();
+      video.play().catch(error => {
+        FrontendLogger.error("VideoPlayer", "Error playing video", error);
+      });
+      FrontendLogger.debug("VideoPlayer", "Video played");
     }
     setIsPlaying(!isPlaying);
   };
 
   const toggleMute = () => {
-    const video = document.querySelector("video");
+    const video = videoRef.current;
     video.muted = !video.muted;
     setIsMuted(!isMuted);
+    FrontendLogger.debug("VideoPlayer", `Video ${video.muted ? 'muted' : 'unmuted'}`);
+  };
+
+  const handleVideoError = (error) => {
+    FrontendLogger.error("VideoPlayer", "Video playback error", error);
   };
 
   return (
@@ -34,12 +52,20 @@ const VideoPlayer = ({ videoUrl, title }) => {
       <CardContent className="flex-1 p-0">
         <div className="relative h-full">
           <video
+            ref={videoRef}
             className="w-full h-full object-cover"
             src={videoUrl}
-            onPlay={() => setIsPlaying(true)}
-            onPause={() => setIsPlaying(false)}
+            onPlay={() => {
+              setIsPlaying(true);
+              FrontendLogger.debug("VideoPlayer", "Video started playing");
+            }}
+            onPause={() => {
+              setIsPlaying(false);
+              FrontendLogger.debug("VideoPlayer", "Video paused");
+            }}
+            onError={handleVideoError}
           >
-            Votre navigateur ne supporte pas la lecture vidéo.
+            Your browser does not support video playback.
           </video>
           <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/50 to-transparent">
             <div className="flex items-center gap-2">

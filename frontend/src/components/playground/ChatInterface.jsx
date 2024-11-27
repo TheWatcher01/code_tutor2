@@ -1,14 +1,22 @@
 // File path: code_tutor2/frontend/src/components/code_playground/ChatInterface.jsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
+import FrontendLogger from "@/services/frontendLogger";
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+
+  useEffect(() => {
+    FrontendLogger.info("ChatInterface", "Component mounted");
+    return () => {
+      FrontendLogger.info("ChatInterface", "Component unmounted");
+    };
+  }, []);
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -20,19 +28,23 @@ const ChatInterface = () => {
       sender: "user",
     };
 
+    FrontendLogger.debug("ChatInterface", "User sent a message", { message: input });
+
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
 
-    // Simuler une réponse de l'IA
+    // Simulate AI response
     setTimeout(() => {
+      const aiResponse = "I'm here to help you with your code!";
       setMessages((prev) => [
         ...prev,
         {
           id: Date.now(),
-          content: "Je suis là pour vous aider avec votre code !",
+          content: aiResponse,
           sender: "ai",
         },
       ]);
+      FrontendLogger.debug("ChatInterface", "AI response received", { response: aiResponse });
     }, 1000);
   };
 

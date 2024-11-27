@@ -41,7 +41,7 @@ const Header = () => {
               {isAuthenticated && (
                 <NavigationMenuItem>
                   <Link to="/playground">
-                    <NavigationMenuLink
+                    <NavigationMenuLink as child
                       className={navigationMenuTriggerStyle()}
                     >
                       Playground
