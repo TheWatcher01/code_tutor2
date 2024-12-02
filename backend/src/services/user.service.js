@@ -1,9 +1,9 @@
-// File path : code_tutor2/backend/src/services/auth.service.js
+// File path : code_tutor2/backend/src/services/user.service.js
 
 import logger from "./backendLogger.js";
 import User from "../models/User.model.js";
 
-class AuthService {
+class UserService {
   async findOrCreateUser(profile) {
     try {
       logger.info("Looking up user by GitHub ID", { githubId: profile.id });
@@ -73,4 +73,4 @@ class AuthService {
   }
 }
 
-export default new AuthService();
+export default new UserService();

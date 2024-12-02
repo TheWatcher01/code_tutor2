@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Layout } from "@/components/common";
 import { AuthForm } from "@/components/auth";
 import { Button } from "@/components/ui/button";
 import { Code, ArrowRight, Brain, Rocket } from "lucide-react";
@@ -63,7 +62,6 @@ const Home = () => {
   }
 
   return (
-    <Layout>
       <div className="min-h-[calc(100vh-10rem)] flex flex-col">
         {/* Hero Section */}
         <section className="py-20">
@@ -124,7 +122,6 @@ const Home = () => {
           </div>
         </section>
       </div>
-    </Layout>
   );
 };
 
