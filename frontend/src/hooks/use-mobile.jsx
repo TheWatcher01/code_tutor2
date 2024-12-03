@@ -14,14 +14,14 @@ export const useMobile = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
 
-    // Configuration initiale
+    // Initial setup
     handleResize();
 
-    // Ajout des listeners
+    // Add event listeners
     mql.addEventListener("change", handleResize);
     window.addEventListener("resize", handleResize);
 
-    // Nettoyage
+    // Cleanup
     return () => {
       mql.removeEventListener("change", handleResize);
       window.removeEventListener("resize", handleResize);

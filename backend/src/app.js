@@ -26,14 +26,14 @@ const initialize = async () => {
     initializeApp(app);
     logger.info("[Server] Core middleware initialized");
 
-    // 3. Session AVANT passport
+    // 3. Initialize session BEFORE passport
     await initializeSession(app);
     logger.info("[Server] Session initialized");
 
-    // 4. Initialiser passport et ses middleware
+    // 4. Initialize passport and its middleware
     app.use(passport.initialize());
     app.use(passport.session());
-    initializePassport(); // Ne pas passer app en paramètre
+    initializePassport(); // Don't pass app as parameter
     logger.info("[Server] Passport initialized");
 
     // 5. Routes

@@ -7,7 +7,7 @@ import logger from "../services/backendLogger.js";
 const initializeSession = (app) => {
   logger.info("[Session Config] Starting initialization");
 
-  // Validation des variables d'environnement
+  // Validate environment variables
   if (
     !process.env.MONGODB_URI ||
     !process.env.SESSION_SECRET ||
@@ -20,7 +20,7 @@ const initializeSession = (app) => {
   }
 
   try {
-    // Configuration du store MongoDB
+    // Configure MongoDB store
     const store = MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
       ttl: 24 * 60 * 60,
@@ -33,7 +33,7 @@ const initializeSession = (app) => {
       },
     });
 
-    // Monitoring des sessions
+    // Session monitoring
     store.on("create", (sessionId) => {
       logger.debug("[Session Store] Session created", {
         id: sessionId?.substring(0, 8),
@@ -53,28 +53,28 @@ const initializeSession = (app) => {
       });
     });
 
-    // Configuration principale de la session
+    // Main session configuration
     const sessionConfig = {
       store,
       secret: process.env.SESSION_SECRET,
-      name: "code_tutor.sid", // Nom fixe du cookie
+      name: "code_tutor.sid", // Fixed cookie name
       resave: false,
       saveUninitialized: false,
-      proxy: true, // Important pour nginx
+      proxy: true, // Required for nginx
       cookie: {
-        secure: true, // Toujours true avec nginx/https
+        secure: true, // Always true with nginx/https
         httpOnly: true,
-        sameSite: "none", // Important pour le cross-domain
+        sameSite: "none", // Required for cross-domain
         maxAge: 24 * 60 * 60 * 1000,
         path: "/",
-        domain: "code-tutor.dev31.tech", // Domaine explicite
+        domain: "code-tutor.dev31.tech", // Explicit domain
       },
     };
 
-    // Trust proxy pour nginx
+    // Trust proxy for nginx
     app.set("trust proxy", 1);
 
-    // Log de la configuration
+    // Log configuration
     logger.debug("[Session Config] Session configuration", {
       cookieName: sessionConfig.name,
       cookieSecure: sessionConfig.cookie.secure,
@@ -82,10 +82,10 @@ const initializeSession = (app) => {
       environment: process.env.NODE_ENV,
     });
 
-    // Application du middleware session
+    // Apply session middleware
     app.use(session(sessionConfig));
 
-    // Middleware de monitoring
+    // Monitoring middleware
     app.use((req, res, next) => {
       logger.debug("[Session Config] Session middleware", {
         sessionID: req.sessionID?.substring(0, 8),

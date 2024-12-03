@@ -1,3 +1,5 @@
+// File path: frontend/contexts/AuthProvider.jsx
+
 import { useState, useEffect, useCallback, memo } from "react";
 import PropTypes from "prop-types";
 import api from "@/lib/axiosConfig";
@@ -45,7 +47,7 @@ const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Vérifie l'auth seulement sur les routes protégées
+  // Check auth only on protected routes
   useEffect(() => {
     const isProtectedRoute = window.location.pathname.startsWith("/playground");
     if (isProtectedRoute) {

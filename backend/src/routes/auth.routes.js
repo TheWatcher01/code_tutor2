@@ -1,4 +1,4 @@
-// File path : code_tutor2/backend/src/routes/auth.routes.js
+// Authentication routes for the application
 
 import { Router } from "express";
 import passport from "passport";
@@ -6,7 +6,7 @@ import logger from "../services/backendLogger.js";
 
 const router = Router();
 
-// Auth status
+// Returns the current authentication status and user info
 router.get("/status", (req, res) => {
   logger.debug("[Auth] Status check", { 
     isAuthenticated: req.isAuthenticated(),
@@ -18,7 +18,7 @@ router.get("/status", (req, res) => {
   });
 });
 
-// GitHub auth init
+// Initiates GitHub OAuth authentication flow
 router.get("/github", 
   (req, res, next) => {
     logger.info("[Auth] Starting GitHub auth", { sessionId: req.sessionID });
@@ -27,8 +27,7 @@ router.get("/github",
   passport.authenticate("github", { scope: ["user:email"] })
 );
 
-// GitHub callback
-// GitHub callback
+// Handles the GitHub OAuth callback
 router.get("/github/callback",
   (req, res, next) => {
     logger.info("[Auth] GitHub callback received", { 
@@ -39,12 +38,12 @@ router.get("/github/callback",
   },
   passport.authenticate("github", {
     failureRedirect: `${process.env.FRONTEND_URL}?error=auth_failed`,
-    // Rediriger vers la page callback frontend
+    // Redirect to frontend callback page on success
     successRedirect: `${process.env.FRONTEND_URL}/auth/github/callback`,
   })
 );
 
-// Logout
+// Handles user logout and session cleanup
 router.post("/logout", (req, res) => {
   logger.info("[Auth] Logout request", { userId: req.user?.id });
   req.logout(() => {

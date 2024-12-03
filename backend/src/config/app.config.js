@@ -1,4 +1,4 @@
-// File path : code_tutor2/backend/src/config/app.config.js
+// File path: code_tutor2/backend/src/config/app.config.js
 
 import express from "express";
 import logger from "../services/backendLogger.js";
@@ -6,11 +6,11 @@ import logger from "../services/backendLogger.js";
 const initializeApp = (app) => {
   logger.info("[App Config] Starting initialization");
 
-  // Middlewares de base
+  // Base middlewares
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Log chaque requête
+  // Log each request
   app.use((req, res, next) => {
     logger.debug("[App Config] Request received", {
       method: req.method,

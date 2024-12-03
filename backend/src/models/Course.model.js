@@ -3,13 +3,14 @@
 import mongoose from "mongoose";
 import logger from "../services/backendLogger.js";
 
-// Constants
+// Course difficulty levels
 const COURSE_LEVELS = {
   BEGINNER: "beginner",
-  INTERMEDIATE: "intermediate",
+  INTERMEDIATE: "intermediate", 
   ADVANCED: "advanced",
 };
 
+// Types of content that can be included in a course
 const CONTENT_TYPES = {
   TEXT: "text",
   VIDEO: "video",
@@ -17,7 +18,7 @@ const CONTENT_TYPES = {
   QUIZ: "quiz",
 };
 
-// Sous-schéma pour le contenu
+// Content sub-schema definition
 const contentSchema = new mongoose.Schema(
   {
     title: {
@@ -146,7 +147,7 @@ const courseSchema = new mongoose.Schema(
   }
 );
 
-// Indexes composites pour les requêtes fréquentes
+// Composite indexes for frequent queries
 courseSchema.index(
   { title: "text", description: "text", topics: "text" },
   {
@@ -184,7 +185,7 @@ courseSchema.index(
   }
 );
 
-// Virtuals
+// Virtual properties
 courseSchema.virtual("studentCount").get(function () {
   return this.students?.length || 0;
 });
@@ -197,7 +198,7 @@ courseSchema.virtual("contentCount").get(function () {
   return this.content?.length || 0;
 });
 
-// Instance methods
+// Instance methods for student management
 courseSchema.methods.addStudent = async function (studentId) {
   try {
     if (!this.students.includes(studentId)) {
@@ -258,7 +259,7 @@ courseSchema.methods.removeStudent = async function (studentId) {
   }
 };
 
-// Middlewares
+// Middleware hooks
 courseSchema.pre("save", function (next) {
   if (this.isNew) {
     logger.info("Course", "Creating new course", {
@@ -285,7 +286,7 @@ courseSchema.post("save", function (error, doc, next) {
   }
 });
 
-// Static methods
+// Static methods for course queries
 courseSchema.statics.findPublished = function () {
   return this.find({ isPublished: true })
     .select("-content")

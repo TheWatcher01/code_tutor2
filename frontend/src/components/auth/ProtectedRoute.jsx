@@ -49,7 +49,7 @@ const ProtectedRoute = ({ children }) => {
     }
   }, [isAuthenticated, checkAuth, location.pathname]);
 
-  // Effect pour le montage initial
+  // Effect for initial mount
   useEffect(() => {
     if (!mountRef.current) {
       logger.debug("ProtectedRoute", "Initial mount", {
@@ -60,7 +60,7 @@ const ProtectedRoute = ({ children }) => {
     }
   }, [verifyAuth, location.pathname]);
 
-  // Effect pour le nettoyage
+  // Cleanup effect
   useEffect(() => {
     return () => {
       logger.debug("ProtectedRoute", "Unmounting", {
@@ -85,7 +85,7 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // Gestion de l'accès non autorisé
+  // Handle unauthorized access
   if (!isAuthenticated) {
     logger.warn("ProtectedRoute", "Unauthorized access", {
       path: location.pathname,
@@ -98,20 +98,20 @@ const ProtectedRoute = ({ children }) => {
         state={{ 
           from: location.pathname,
           unauthorized: true,
-          timestamp: Date.now() // Ajoute un timestamp pour éviter les redirections en boucle
+          timestamp: Date.now() // Add timestamp to prevent redirect loops
         }} 
         replace 
       />
     );
   }
 
-  // Rendu du contenu protégé
+  // Render protected content
   logger.debug("ProtectedRoute", "Rendering protected content", {
     path: location.pathname,
     isAuthenticated: true
   });
 
-  // Retourne le contenu protégé
+  // Return protected content
   return children;
 };
 
@@ -119,8 +119,8 @@ ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-// Exporte une version mémorisée du composant pour éviter les re-rendus inutiles
+// Export memoized component to prevent unnecessary re-renders
 export default memo(ProtectedRoute, (prevProps, nextProps) => {
-  // Compare les props pour déterminer si un re-rendu est nécessaire
+  // Compare props to determine if re-render is needed
   return prevProps.children === nextProps.children;
 });

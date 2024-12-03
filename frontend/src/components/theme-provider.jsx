@@ -4,7 +4,7 @@ import { createContext, useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { themes, initialThemeState } from "@/constants/themes";
 
-// Création du contexte pour le fournisseur de thème
+// Create theme context provider
 const ThemeContext = createContext(initialThemeState);
 
 function ThemeProvider({
@@ -48,12 +48,12 @@ function ThemeProvider({
   );
 }
 
-// Validation des types de props pour ThemeProvider
+// Props validation for ThemeProvider
 ThemeProvider.propTypes = {
   children: PropTypes.node.isRequired,
   defaultTheme: PropTypes.oneOf(Object.values(themes)),
   storageKey: PropTypes.string,
 };
 
-// Exporte seulement les composants
+// Export components only
 export { ThemeContext, ThemeProvider };

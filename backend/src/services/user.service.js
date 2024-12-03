@@ -42,8 +42,8 @@ class UserService {
     try {
       logger.debug("Validating session", { sessionId });
 
-      // Add your session validation logic here
-      // For example, checking session expiration, user status, etc.
+      // Validate the session by checking expiration time and user status
+      // TODO: Implement actual session validation logic
 
       return true;
     } catch (error) {
@@ -59,8 +59,8 @@ class UserService {
     try {
       logger.info("Revoking session", { sessionId });
 
-      // Add your session revocation logic here
-      // This could involve removing the session from your store
+      // Remove session from store and invalidate any associated tokens
+      // TODO: Implement actual session revocation logic
 
       return true;
     } catch (error) {

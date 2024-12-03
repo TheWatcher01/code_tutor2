@@ -7,7 +7,7 @@ import * as React from "react";
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
 
-// Action types utilisés dans le reducer
+// Action types used in the reducer
 const ADD_TOAST = "ADD_TOAST";
 const UPDATE_TOAST = "UPDATE_TOAST";
 const DISMISS_TOAST = "DISMISS_TOAST";

@@ -82,18 +82,18 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
   const layoutTimeRef = useRef(null);
   const resizeObserverRef = useRef(null);
 
-  // Mémoisation du style pour éviter les recalculs
+  // Memoized style to avoid recalculations
   const editorWrapperStyle = useMemo(() => ({
     height: EDITOR_DEFAULT_HEIGHT,
     position: "relative",
     overflow: "hidden"
   }), []);
 
-  // Optimisation du handler de changement
+  // Optimized change handler
   const handleEditorChange = useCallback((value) => {
     const now = performance.now();
     
-    // Log des changements significatifs (évite le spam)
+    // Log significant changes (avoid spam)
     if (!lastChangeRef.current || (now - lastChangeRef.current) > 1000) {
       logger.debug("CodeEditor", "Content updated", {
         languageUsed: language,
@@ -107,7 +107,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     onChange?.(value);
   }, [onChange, language]);
 
-  // Handler de changement de langage optimisé
+  // Optimized language change handler
   const handleLanguageChange = useCallback((newLanguage) => {
     const startTime = performance.now();
     logger.info("CodeEditor", "Language change initiated", {
@@ -118,7 +118,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
 
     setLanguage(newLanguage);
 
-    // Différer la mise à jour du layout
+    // Defer layout update
     requestAnimationFrame(() => {
       const layoutTime = performance.now() - startTime;
       logger.debug("CodeEditor", "Language change completed", {
@@ -128,11 +128,11 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     });
   }, [language]);
 
-  // Handler de montage de l'éditeur optimisé
+  // Optimized editor mount handler
   const handleEditorDidMount = useCallback((editor) => {
     const mountDuration = performance.now() - mountTimeRef.current;
 
-    // Différer les opérations de layout
+    // Defer layout operations
     requestAnimationFrame(() => {
       editorRef.current = editor;
 
@@ -146,7 +146,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
         }
       });
 
-      // Configuration initiale
+      // Initial configuration
       if (initialValue) {
         const valueSetStart = performance.now();
         editor.setValue(initialValue);
@@ -159,7 +159,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     });
   }, [language, initialValue]);
 
-  // Handler d'erreur amélioré
+  // Enhanced error handler
   const handleEditorError = useCallback((error) => {
     logger.error("CodeEditor", "Editor error occurred", {
       error: error.message,
@@ -172,11 +172,11 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     });
   }, [language]);
 
-  // Gestionnaire de resize optimisé
+  // Optimized resize handler
   const handleResize = useCallback((entries) => {
     const now = performance.now();
     
-    // Éviter les calculs trop fréquents
+    // Avoid too frequent calculations
     if (layoutTimeRef.current && (now - layoutTimeRef.current) < LAYOUT_PERFORMANCE_THRESHOLD) {
       return;
     }
@@ -201,7 +201,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     });
   }, []);
 
-  // Effet de nettoyage et monitoring
+  // Cleanup and monitoring effect
   useEffect(() => {
     const mountTime = mountTimeRef.current;
     
@@ -210,7 +210,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
       mountTime: performance.now() - mountTime
     });
 
-    // Observer pour détecter les problèmes de layout
+    // Observer to detect layout issues
     resizeObserverRef.current = new ResizeObserver(handleResize);
 
     if (containerRef.current) {

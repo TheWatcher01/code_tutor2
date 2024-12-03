@@ -52,7 +52,7 @@ export const sessionChecker = (req, res, next) => {
       ip: req.ip,
     });
 
-    // Clear invalid session
+    // Clean up invalid session if it exists
     if (req.session) {
       req.session.destroy((err) => {
         if (err) {
@@ -70,17 +70,17 @@ export const sessionChecker = (req, res, next) => {
   next();
 };
 
-// Rate limiting for auth routes
+// Implements rate limiting for authentication routes to prevent brute force attacks
 export const authRateLimiter = (req, res, next) => {
   const MAX_ATTEMPTS = 5;
-  const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+  const WINDOW_MS = 15 * 60 * 1000; // 15 minutes window
 
   req.session.authAttempts = req.session.authAttempts || {
     count: 0,
     resetTime: Date.now() + WINDOW_MS,
   };
 
-  // Reset counter if window has expired
+  // Reset attempt counter if time window has expired
   if (Date.now() > req.session.authAttempts.resetTime) {
     req.session.authAttempts.count = 0;
     req.session.authAttempts.resetTime = Date.now() + WINDOW_MS;

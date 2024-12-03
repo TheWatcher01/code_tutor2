@@ -12,7 +12,7 @@ import Home from "@/pages/Home";
 import Playground from "@/pages/Playground";
 import logger from "@/services/frontendLogger";
 
-// Route logger component
+// Component that logs route changes
 const RouteLogger = () => {
   const location = useLocation();
 
@@ -26,7 +26,7 @@ const RouteLogger = () => {
   return null;
 };
 
-// GitHub callback handler component
+// Component that handles GitHub OAuth callback
 const GitHubCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const GitHubCallback = () => {
       search: location.search,
     });
 
-    // Vérifier le statut auth et rediriger
+    // Check auth status and redirect accordingly
     fetch(`${import.meta.env.VITE_API_URL}/auth/status`, {
       credentials: "include",
     })
@@ -62,14 +62,14 @@ const GitHubCallback = () => {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">Connexion en cours...</h2>
-        <p className="text-muted-foreground">Veuillez patienter</p>
+        <h2 className="text-xl font-semibold mb-2">Connecting...</h2>
+        <p className="text-muted-foreground">Please wait</p>
       </div>
     </div>
   );
 };
 
-// Main App Component
+// Main application component
 const AppComponent = () => {
   useEffect(() => {
     logger.info("App", "Application initialized", {
@@ -108,10 +108,10 @@ const AppComponent = () => {
                 <div className="min-h-screen flex items-center justify-center">
                   <div className="text-center">
                     <h2 className="text-2xl font-bold mb-2">
-                      Page non trouvée
+                      Page Not Found
                     </h2>
                     <p className="text-muted-foreground">
-                      La page que vous recherchez n&apos;existe pas.
+                      The page you are looking for does not exist.
                     </p>
                   </div>
                 </div>
@@ -125,7 +125,7 @@ const AppComponent = () => {
   );
 };
 
-// Error Boundary Component
+// Component that catches and handles React errors
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -150,11 +150,10 @@ class ErrorBoundary extends React.Component {
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
           <div className="text-center p-8 max-w-md">
             <h2 className="text-2xl font-bold mb-4">
-              Quelque chose s&apos;est mal passé
+              Something went wrong
             </h2>
             <p className="text-muted-foreground mb-4">
-              Une erreur inattendue s&apos;est produite. Veuillez rafraîchir la
-              page ou réessayer plus tard.
+              An unexpected error occurred. Please refresh the page or try again later.
             </p>
             {import.meta.env.DEV && this.state.error && (
               <pre className="text-sm text-left bg-muted p-4 rounded overflow-auto max-h-48">
@@ -165,7 +164,7 @@ class ErrorBoundary extends React.Component {
               onClick={() => window.location.reload()}
               className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
             >
-              Rafraîchir la page
+              Refresh Page
             </button>
           </div>
         </div>

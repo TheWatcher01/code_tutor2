@@ -217,7 +217,7 @@ class BackendLogger {
     this.error("Alert", message, data);
 
     if (this.config.alertWebhook) {
-      // Send to external monitoring (implementation depends on your monitoring system)
+      // Send to external monitoring
       fetch(this.config.alertWebhook, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -246,7 +246,6 @@ class BackendLogger {
       }
     );
   }
-// ... (Suite du code précédent)
 
   createLogger() {
     require("fs").mkdirSync(this.config.logDir, { recursive: true });
@@ -482,7 +481,6 @@ winston.addColors({
   metrics: "cyan",
   performance: "white",
 });
-
 
 // Export a single instance
 export default new BackendLogger();

@@ -3,6 +3,7 @@
 import mongoose from "mongoose";
 import logger from "../services/backendLogger.js";
 
+// Available authentication providers
 const USER_PROVIDERS = {
   GITHUB: "github",
   LOCAL: "local",
@@ -98,12 +99,12 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Virtuals
+// Virtual property to check if user authenticated through GitHub
 userSchema.virtual("isGithubUser").get(function () {
   return this.provider === USER_PROVIDERS.GITHUB;
 });
 
-// Instance methods
+// Update user's last login timestamp
 userSchema.methods.updateLastLogin = async function () {
   try {
     this.lastLogin = new Date();
@@ -122,16 +123,17 @@ userSchema.methods.updateLastLogin = async function () {
   }
 };
 
-// Static methods
+// Find users by authentication provider
 userSchema.statics.findByProvider = function (provider) {
   return this.find({ provider }).select("-__v");
 };
 
+// Find a user by their username
 userSchema.statics.findByUsername = function (username) {
   return this.findOne({ username }).select("-__v");
 };
 
-// Middlewares
+// Pre-save middleware for logging user creation and updates
 userSchema.pre("save", function (next) {
   if (this.isNew) {
     logger.info("User", "Creating new user", {
@@ -149,6 +151,7 @@ userSchema.pre("save", function (next) {
   next();
 });
 
+// Handle duplicate key errors during save operations
 userSchema.post("save", function (error, doc, next) {
   if (error.name === "MongoServerError" && error.code === 11000) {
     const field = Object.keys(error.keyPattern)[0];

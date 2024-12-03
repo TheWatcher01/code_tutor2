@@ -14,11 +14,11 @@ const MONGO_OPTIONS = {
   family: 4,
   retryWrites: true,
   writeConcern: { w: "majority" },
-  autoIndex: false, // Désactive la création automatique des index
+  autoIndex: false, // Disable automatic index creation
 };
 
 /**
- * Supprime et recrée une collection
+ * Drop and recreate a collection
  */
 async function resetCollection(db, collectionName) {
   try {
@@ -41,7 +41,7 @@ async function resetCollection(db, collectionName) {
 }
 
 /**
- * Initialise les collections et les index
+ * Initialize collections and indexes
  */
 async function initializeDatabase() {
   let connection = null;
@@ -49,20 +49,20 @@ async function initializeDatabase() {
   try {
     logger.info("Database", "Starting database initialization");
 
-    // Configuration mongoose
+    // Configure mongoose
     mongoose.set("strictQuery", true);
 
-    // Vérification de l'URI
+    // Check URI
     const mongoURI = process.env.MONGODB_URI;
     if (!mongoURI) {
       throw new Error("MONGODB_URI environment variable is not set");
     }
 
-    // Connexion à MongoDB
+    // Connect to MongoDB
     connection = await mongoose.connect(mongoURI, MONGO_OPTIONS);
     logger.info("Database", "Connected to MongoDB");
 
-    // Setup des handlers de connexion
+    // Setup connection handlers
     connection.connection.on("error", (error) => {
       logger.error("Database", "Connection error", { error: error.message });
     });
@@ -75,13 +75,13 @@ async function initializeDatabase() {
       logger.info("Database", "Reconnected to MongoDB");
     });
 
-    // Reset des collections
+    // Reset collections
     const collections = ["users", "courses"];
     for (const collectionName of collections) {
       await resetCollection(connection.connection.db, collectionName);
     }
 
-    // Création des nouveaux index
+    // Create new indexes
     logger.info("Database", "Creating indexes");
     for (const [modelName, model] of Object.entries(connection.models)) {
       try {
@@ -96,7 +96,7 @@ async function initializeDatabase() {
       }
     }
 
-    // Vérification finale
+    // Final verification
     logger.info("Database", "Initialization completed", {
       database: connection.connection.name,
       host: connection.connection.host,
@@ -126,7 +126,7 @@ async function initializeDatabase() {
   }
 }
 
-// Gestionnaire de nettoyage
+// Cleanup handler
 async function cleanup(signal) {
   try {
     if (mongoose.connection.readyState === 1) {
@@ -141,7 +141,7 @@ async function cleanup(signal) {
   }
 }
 
-// Setup des handlers de processus
+// Setup process handlers
 process.on("SIGINT", () => cleanup("SIGINT").then(() => process.exit(0)));
 process.on("SIGTERM", () => cleanup("SIGTERM").then(() => process.exit(0)));
 
