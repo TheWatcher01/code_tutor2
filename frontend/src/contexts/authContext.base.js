@@ -1,8 +1,14 @@
-// File path: code_tutor2/frontend/src/contexts/authContext.base.js
+// File path: frontend/src/contexts/authContext.base.js
 
 import { createContext } from "react";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext({
+  user: null,
+  loading: false,
+  error: null,
+  isAuthenticated: false,
+  revalidate: () => Promise.resolve(),
+});
 
 AuthContext.displayName = "AuthContext";
 

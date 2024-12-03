@@ -1,81 +1,43 @@
 // File path: frontend/contexts/AuthProvider.jsx
 
-import { useState, useEffect, useCallback, memo } from "react";
+import { useEffect, memo } from "react";
 import PropTypes from "prop-types";
-import api from "@/lib/axiosConfig";
 import logger from "@/services/frontendLogger";
 import AuthContext from "./authContext.base";
+import { useAuthStatus } from "@/api/hooks/useAuth.api";
 
 const AuthProvider = ({ children }) => {
-  const [state, setState] = useState({
-    user: null,
-    loading: true,
-    error: null,
-  });
+  const { data, error, isLoading, mutate } = useAuthStatus();
 
-  const checkAuth = useCallback(async () => {
-    try {
-      logger.debug("AuthProvider", "Checking auth status");
-      const { data } = await api.get("/auth/status");
-      setState((prev) => ({
-        ...prev,
-        user: data.isAuthenticated ? data.user : null,
-        loading: false,
-      }));
-      logger.info("AuthProvider", "Auth status updated", {
-        isAuthenticated: data.isAuthenticated,
-      });
-    } catch (err) {
-      logger.error("AuthProvider", "Auth check failed", { error: err.message });
-      setState((prev) => ({
-        ...prev,
-        loading: false,
-        error: "Auth check failed",
-      }));
-    }
-  }, []);
-
-  const logout = useCallback(async () => {
-    try {
-      logger.info("AuthProvider", "Logging out user");
-      await api.post("/auth/logout");
-      setState({ user: null, loading: false, error: null });
-      logger.info("AuthProvider", "Logout successful");
-    } catch (err) {
-      logger.error("AuthProvider", "Logout failed", { error: err.message });
-      setState((prev) => ({ ...prev, error: "Logout failed" }));
-    }
-  }, []);
-
-  // Check auth only on protected routes
+  // Log des changements d'état d'authentification
   useEffect(() => {
-    const isProtectedRoute = window.location.pathname.startsWith("/playground");
-    if (isProtectedRoute) {
-      logger.debug("AuthProvider", "Protected route detected, checking auth");
-      checkAuth();
-    } else {
-      setState((prev) => ({ ...prev, loading: false }));
+    if (data) {
+      logger.info("AuthProvider", "Auth status updated", {
+        isAuthenticated: !!data.user,
+      });
     }
-  }, [checkAuth]);
+    if (error) {
+      logger.error("AuthProvider", "Auth error", { error });
+    }
+  }, [data, error]);
 
   const value = {
-    ...state,
-    logout,
-    checkAuth,
-    isAuthenticated: !!state.user,
+    user: data?.user || null,
+    loading: isLoading,
+    error: error,
+    isAuthenticated: !!data?.user,
+    revalidate: mutate,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {state.loading ? (
-        <div className="flex items-center justify-center h-screen">
-          <p>Loading...</p>
-        </div>
-      ) : (
-        children
-      )}
-    </AuthContext.Provider>
-  );
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 AuthProvider.propTypes = {
