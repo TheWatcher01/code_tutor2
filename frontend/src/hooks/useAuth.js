@@ -31,7 +31,7 @@ const useAuth = () => {
     } catch (error) {
       logger.error("useAuth", "Logout failed", { error });
     }
-  }, [logout, context.revalidate, navigate]);
+  }, [logout, context, navigate]);
 
   return {
     ...context,
