@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import React from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts";
@@ -29,13 +29,35 @@ const RouteLogger = () => {
 // GitHub callback handler component
 const GitHubCallback = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Log callback info with location search
     logger.info("GitHubCallback", "Processing GitHub OAuth callback", {
       search: location.search,
     });
-  }, [location.search]); // Added location.search as dependency
+
+    // Vérifier le statut auth et rediriger
+    fetch(`${import.meta.env.VITE_API_URL}/auth/status`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.isAuthenticated) {
+          logger.info(
+            "GitHubCallback",
+            "Authentication successful, redirecting"
+          );
+          navigate("/playground");
+        } else {
+          logger.error("GitHubCallback", "Authentication failed");
+          navigate("/?error=auth_failed");
+        }
+      })
+      .catch((error) => {
+        logger.error("GitHubCallback", "Error checking auth status", { error });
+        navigate("/?error=auth_failed");
+      });
+  }, [location.search, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

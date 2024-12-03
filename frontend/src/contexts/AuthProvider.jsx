@@ -1,206 +1,78 @@
-// File path: code_tutor2/frontend/src/contexts/AuthProvider.jsx
-
-import {
-  useReducer,
-  useEffect,
-  useCallback,
-  useRef,
-  useMemo,
-  memo,
-} from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import PropTypes from "prop-types";
-import { debounce } from "lodash";
 import api from "@/lib/axiosConfig";
 import logger from "@/services/frontendLogger";
 import AuthContext from "./authContext.base";
 
-const DEBOUNCE_DELAY = 100;
-const AUTH_STATUS_ENDPOINT = "/auth/status";
-const AUTH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-// Actions
-const AUTH_ACTIONS = {
-  SET_LOADING: "SET_LOADING",
-  SET_USER: "SET_USER",
-  SET_ERROR: "SET_ERROR",
-  CLEAR_ERROR: "CLEAR_ERROR",
-  LOGOUT: "LOGOUT",
-};
-
-// Initial state
-const initialState = {
-  user: null,
-  loading: true,
-  error: null,
-  isAuthenticated: false,
-};
-
-// Reducer
-const authReducer = (state, action) => {
-  switch (action.type) {
-    case AUTH_ACTIONS.SET_LOADING:
-      return { ...state, loading: action.payload };
-    case AUTH_ACTIONS.SET_USER:
-      return {
-        ...state,
-        user: action.payload,
-        isAuthenticated: !!action.payload,
-        loading: false,
-      };
-    case AUTH_ACTIONS.SET_ERROR:
-      return { ...state, error: action.payload, loading: false };
-    case AUTH_ACTIONS.CLEAR_ERROR:
-      return { ...state, error: null };
-    case AUTH_ACTIONS.LOGOUT:
-      return { ...initialState, loading: false };
-    default:
-      return state;
-  }
-};
-
-// Cache implementation
-const authCache = {
-  data: null,
-  timestamp: null,
-  isValid() {
-    return (
-      this.data &&
-      this.timestamp &&
-      Date.now() - this.timestamp < AUTH_CACHE_TTL
-    );
-  },
-  set(data) {
-    this.data = data;
-    this.timestamp = Date.now();
-  },
-  clear() {
-    this.data = null;
-    this.timestamp = null;
-  },
-};
-
 const AuthProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState);
-  const mountedRef = useRef(true);
-  const authCheckInProgress = useRef(false);
+  const [state, setState] = useState({
+    user: null,
+    loading: true,
+    error: null,
+  });
 
-  const checkAuth = useCallback(async (force = false) => {
+  const checkAuth = useCallback(async () => {
     try {
-      if (!force && !mountedRef.current) return;
-
-      // Check the cache if not in force mode
-      if (!force && authCache.isValid()) {
-        const cachedUser = authCache.data;
-        dispatch({ type: AUTH_ACTIONS.SET_USER, payload: cachedUser });
-        return;
-      }
-
-      if (authCheckInProgress.current) {
-        logger.debug("AuthProvider", "Auth check already in progress");
-        return;
-      }
-
-      authCheckInProgress.current = true;
-      logger.debug("AuthProvider", "Starting auth check");
-
-      const { data } = await api.get(AUTH_STATUS_ENDPOINT);
-      const nextUser = data.isAuthenticated ? data.user : null;
-
-      if (mountedRef.current) {
-        authCache.set(nextUser);
-        dispatch({ type: AUTH_ACTIONS.SET_USER, payload: nextUser });
-        logger.info("AuthProvider", "User state updated", {
-          isAuthenticated: !!nextUser,
-        });
-      }
+      logger.debug("AuthProvider", "Checking auth status");
+      const { data } = await api.get("/auth/status");
+      setState((prev) => ({
+        ...prev,
+        user: data.isAuthenticated ? data.user : null,
+        loading: false,
+      }));
+      logger.info("AuthProvider", "Auth status updated", {
+        isAuthenticated: data.isAuthenticated,
+      });
     } catch (err) {
-      if (mountedRef.current) {
-        authCache.clear();
-        dispatch({
-          type: AUTH_ACTIONS.SET_ERROR,
-          payload: "Authentication check failed",
-        });
-        logger.error("AuthProvider", "Auth check failed", {
-          error: err.message,
-        });
-      }
-    } finally {
-      authCheckInProgress.current = false;
+      logger.error("AuthProvider", "Auth check failed", { error: err.message });
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error: "Auth check failed",
+      }));
     }
   }, []);
-
-  // Debounce optimization with useMemo
-  const debouncedCheckAuth = useMemo(
-    () => debounce(checkAuth, DEBOUNCE_DELAY),
-    [checkAuth]
-  );
-
-  useEffect(() => {
-    mountedRef.current = true;
-    logger.info("AuthProvider", "Initializing auth state");
-
-    // Immediate check on mount
-    checkAuth(true);
-
-    const handleFocus = () => {
-      if (mountedRef.current && !state.loading) {
-        debouncedCheckAuth();
-      }
-    };
-
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      mountedRef.current = false;
-      debouncedCheckAuth.cancel();
-      window.removeEventListener("focus", handleFocus);
-      logger.debug("AuthProvider", "Cleanup completed");
-    };
-  }, [checkAuth, debouncedCheckAuth, state.loading]);
 
   const logout = useCallback(async () => {
     try {
+      logger.info("AuthProvider", "Logging out user");
       await api.post("/auth/logout");
-      authCache.clear();
-      dispatch({ type: AUTH_ACTIONS.LOGOUT });
+      setState({ user: null, loading: false, error: null });
       logger.info("AuthProvider", "Logout successful");
     } catch (err) {
-      dispatch({
-        type: AUTH_ACTIONS.SET_ERROR,
-        payload: "Logout failed",
-      });
-      logger.error("AuthProvider", "Logout failed", {
-        error: err.message,
-      });
+      logger.error("AuthProvider", "Logout failed", { error: err.message });
+      setState((prev) => ({ ...prev, error: "Logout failed" }));
     }
   }, []);
 
-  const clearError = useCallback(() => {
-    dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
-  }, []);
+  // Vérifie l'auth seulement sur les routes protégées
+  useEffect(() => {
+    const isProtectedRoute = window.location.pathname.startsWith("/playground");
+    if (isProtectedRoute) {
+      logger.debug("AuthProvider", "Protected route detected, checking auth");
+      checkAuth();
+    } else {
+      setState((prev) => ({ ...prev, loading: false }));
+    }
+  }, [checkAuth]);
 
-  const contextValue = useMemo(
-    () => ({
-      ...state,
-      logout,
-      clearError,
-      checkAuth: debouncedCheckAuth,
-    }),
-    [state, logout, clearError, debouncedCheckAuth]
-  );
-
-  // Loading state optimization
-  if (state.loading) {
-    return (
-      <div className="loading-container">
-        <div className="spinner"></div>
-        <p>Loading...</p>
-      </div>
-    );
-  }
+  const value = {
+    ...state,
+    logout,
+    checkAuth,
+    isAuthenticated: !!state.user,
+  };
 
   return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={value}>
+      {state.loading ? (
+        <div className="flex items-center justify-center h-screen">
+          <p>Loading...</p>
+        </div>
+      ) : (
+        children
+      )}
+    </AuthContext.Provider>
   );
 };
 

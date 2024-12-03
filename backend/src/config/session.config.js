@@ -20,20 +20,20 @@ const initializeSession = (app) => {
   }
 
   try {
-    // Configuration du store avec options minimales mais sécurisées
+    // Configuration du store MongoDB
     const store = MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
-      ttl: 24 * 60 * 60, // 1 jour
+      ttl: 24 * 60 * 60,
       autoRemove: "native",
       collectionName: "sessions",
-      touchAfter: 24 * 3600, // Optimisation des accès
+      touchAfter: 24 * 3600,
       mongoOptions: {
         enableUtf8Validation: true,
         serverSelectionTimeoutMS: 5000,
       },
     });
 
-    // Monitoring basique
+    // Monitoring des sessions
     store.on("create", (sessionId) => {
       logger.debug("[Session Store] Session created", {
         id: sessionId?.substring(0, 8),
@@ -53,43 +53,44 @@ const initializeSession = (app) => {
       });
     });
 
-    // Configuration de session de base mais sécurisée
+    // Configuration principale de la session
     const sessionConfig = {
       store,
       secret: process.env.SESSION_SECRET,
-      name: process.env.SESSION_COOKIE_NAME,
+      name: "code_tutor.sid", // Nom fixe du cookie
       resave: false,
       saveUninitialized: false,
+      proxy: true, // Important pour nginx
       cookie: {
-        secure: process.env.NODE_ENV === "production",
+        secure: true, // Toujours true avec nginx/https
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "none", // Important pour le cross-domain
         maxAge: 24 * 60 * 60 * 1000,
         path: "/",
+        domain: "code-tutor.dev31.tech", // Domaine explicite
       },
     };
 
-    // Support HTTPS en production
-    if (process.env.NODE_ENV === "production") {
-      app.set("trust proxy", 1);
-      sessionConfig.cookie.secure = true;
-    }
+    // Trust proxy pour nginx
+    app.set("trust proxy", 1);
 
     // Log de la configuration
     logger.debug("[Session Config] Session configuration", {
       cookieName: sessionConfig.name,
       cookieSecure: sessionConfig.cookie.secure,
+      cookieDomain: sessionConfig.cookie.domain,
       environment: process.env.NODE_ENV,
     });
 
-    // Application du middleware
+    // Application du middleware session
     app.use(session(sessionConfig));
 
-    // Middleware de monitoring léger
+    // Middleware de monitoring
     app.use((req, res, next) => {
       logger.debug("[Session Config] Session middleware", {
         sessionID: req.sessionID?.substring(0, 8),
         isNewSession: req.session.isNew,
+        hasCookie: !!req.headers.cookie,
       });
       next();
     });

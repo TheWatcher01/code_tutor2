@@ -2,17 +2,7 @@
 
 import { createContext } from "react";
 
-const AuthContext = createContext({
-  user: null,
-  loading: true,
-  error: null,
-  setError: () => {},
-  clearError: () => {},
-  setUser: () => {},
-  logout: () => Promise.resolve(),
-  checkAuth: () => Promise.resolve(),
-  isAuthenticated: false,
-});
+const AuthContext = createContext(null);
 
 AuthContext.displayName = "AuthContext";
 

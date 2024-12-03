@@ -28,6 +28,7 @@ router.get("/github",
 );
 
 // GitHub callback
+// GitHub callback
 router.get("/github/callback",
   (req, res, next) => {
     logger.info("[Auth] GitHub callback received", { 
@@ -37,8 +38,9 @@ router.get("/github/callback",
     next();
   },
   passport.authenticate("github", {
-    failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed`,
-    successRedirect: `${process.env.FRONTEND_URL}/playground`,
+    failureRedirect: `${process.env.FRONTEND_URL}?error=auth_failed`,
+    // Rediriger vers la page callback frontend
+    successRedirect: `${process.env.FRONTEND_URL}/auth/github/callback`,
   })
 );
 
