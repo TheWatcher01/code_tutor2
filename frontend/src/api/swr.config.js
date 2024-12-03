@@ -1,6 +1,7 @@
-// File path:
+// File path: frontend/src/api/swr.config.js
 
 import { SWRConfig } from "swr";
+import PropTypes from "prop-types";
 
 const fetcher = (...args) => fetch(...args).then((res) => res.json());
 
@@ -19,4 +20,9 @@ export const SwrProvider = ({ children }) => {
       {children}
     </SWRConfig>
   );
+};
+
+// Props validation using PropTypes
+SwrProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
