@@ -3,14 +3,14 @@
 import mongoose from "mongoose";
 import logger from "../services/backendLogger.js";
 
-// Course difficulty levels
+// Define course difficulty levels for better organization and filtering
 const COURSE_LEVELS = {
   BEGINNER: "beginner",
   INTERMEDIATE: "intermediate", 
   ADVANCED: "advanced",
 };
 
-// Types of content that can be included in a course
+// Define supported content types that can be included in course modules
 const CONTENT_TYPES = {
   TEXT: "text",
   VIDEO: "video",
@@ -18,7 +18,7 @@ const CONTENT_TYPES = {
   QUIZ: "quiz",
 };
 
-// Content sub-schema definition
+// Schema for individual content items within a course
 const contentSchema = new mongoose.Schema(
   {
     title: {
@@ -29,7 +29,7 @@ const contentSchema = new mongoose.Schema(
     },
     description: {
       type: String,
-      required: [true, "Content description is required"],
+      required: [true, "Content description is required"], 
       trim: true,
       maxlength: [2000, "Content description cannot exceed 2000 characters"],
     },
@@ -39,7 +39,7 @@ const contentSchema = new mongoose.Schema(
       enum: Object.values(CONTENT_TYPES),
     },
     data: {
-      type: mongoose.Schema.Types.Mixed,
+      type: mongoose.Schema.Types.Mixed, // Flexible data field to store different content types
       required: [true, "Content data is required"],
     },
     order: {
@@ -48,9 +48,10 @@ const contentSchema = new mongoose.Schema(
       min: [0, "Order must be a non-negative number"],
     },
   },
-  { _id: false }
+  { _id: false } // Disable automatic _id generation for subdocuments
 );
 
+// Main course schema definition with comprehensive course details
 const courseSchema = new mongoose.Schema(
   {
     title: {
@@ -85,6 +86,7 @@ const courseSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         validate: {
+          // Validate that referenced students exist in the database
           validator: async function (studentId) {
             if (this.isNew) return true;
             const User = mongoose.model("User");
@@ -113,7 +115,7 @@ const courseSchema = new mongoose.Schema(
         maxlength: [50, "Topic cannot exceed 50 characters"],
       },
     ],
-    content: [contentSchema],
+    content: [contentSchema], // Array of course content items
     duration: {
       type: Number,
       required: [true, "Duration is required"],
@@ -134,7 +136,7 @@ const courseSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true,
+    timestamps: true, // Automatically manage createdAt and updatedAt
     collection: "courses",
     toJSON: {
       transform: (doc, ret) => {
@@ -147,7 +149,7 @@ const courseSchema = new mongoose.Schema(
   }
 );
 
-// Composite indexes for frequent queries
+// Create text search index with weighted fields for better search results
 courseSchema.index(
   { title: "text", description: "text", topics: "text" },
   {
@@ -161,6 +163,7 @@ courseSchema.index(
   }
 );
 
+// Compound indexes for optimizing common queries
 courseSchema.index(
   { isPublished: 1, level: 1 },
   {
@@ -185,7 +188,7 @@ courseSchema.index(
   }
 );
 
-// Virtual properties
+// Virtual properties for computed values
 courseSchema.virtual("studentCount").get(function () {
   return this.students?.length || 0;
 });
@@ -198,7 +201,7 @@ courseSchema.virtual("contentCount").get(function () {
   return this.content?.length || 0;
 });
 
-// Instance methods for student management
+// Method to safely add a student to the course
 courseSchema.methods.addStudent = async function (studentId) {
   try {
     if (!this.students.includes(studentId)) {
@@ -232,6 +235,7 @@ courseSchema.methods.addStudent = async function (studentId) {
   }
 };
 
+// Method to safely remove a student from the course
 courseSchema.methods.removeStudent = async function (studentId) {
   try {
     const index = this.students.indexOf(studentId);
@@ -259,7 +263,7 @@ courseSchema.methods.removeStudent = async function (studentId) {
   }
 };
 
-// Middleware hooks
+// Middleware to log course creation and updates
 courseSchema.pre("save", function (next) {
   if (this.isNew) {
     logger.info("Course", "Creating new course", {
@@ -278,6 +282,7 @@ courseSchema.pre("save", function (next) {
   next();
 });
 
+// Error handling middleware for duplicate course entries
 courseSchema.post("save", function (error, doc, next) {
   if (error.name === "MongoServerError" && error.code === 11000) {
     next(new Error("Duplicate course entry"));
@@ -286,19 +291,21 @@ courseSchema.post("save", function (error, doc, next) {
   }
 });
 
-// Static methods for course queries
+// Static method to find all published courses
 courseSchema.statics.findPublished = function () {
   return this.find({ isPublished: true })
     .select("-content")
     .populate("professor", "username displayName");
 };
 
+// Static method to find courses by professor
 courseSchema.statics.findByProfessor = function (professorId) {
   return this.find({ professor: professorId })
     .select("-content")
     .sort("-createdAt");
 };
 
+// Static method to find courses by difficulty level
 courseSchema.statics.findByLevel = function (level) {
   return this.find({
     level,
@@ -308,6 +315,7 @@ courseSchema.statics.findByLevel = function (level) {
     .populate("professor", "username displayName");
 };
 
+// Static method to find most popular courses based on student count
 courseSchema.statics.findPopular = function (limit = 10) {
   return this.aggregate([
     { $match: { isPublished: true } },

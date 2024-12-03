@@ -19,7 +19,7 @@ const useAuth = () => {
   const loginWithGithub = useCallback(() => {
     logger.info("useAuth", "Initiating GitHub login");
     window.location.replace(
-      `${import.meta.env.VITE_API_URL}/auth/github/callback`
+      `${import.meta.env.VITE_API_URL}/auth/github`
     );
   }, []);
 

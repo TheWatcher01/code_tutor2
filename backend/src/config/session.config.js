@@ -7,43 +7,16 @@ import logger from "../services/backendLogger.js";
 const initializeSession = (app) => {
   logger.info("[Session Config] Starting initialization");
 
-  // Validate environment variables
-  if (
-    !process.env.MONGODB_URI ||
-    !process.env.SESSION_SECRET ||
-    !process.env.SESSION_COOKIE_NAME
-  ) {
-    const error =
-      "Missing required environment variables for session configuration";
-    logger.error("[Session Config] Initialization failed", { error });
-    throw new Error(error);
-  }
-
   try {
-    // Configure MongoDB store
     const store = MongoStore.create({
       mongoUrl: process.env.MONGODB_URI,
       ttl: 24 * 60 * 60,
       autoRemove: "native",
-      collectionName: "sessions",
       touchAfter: 24 * 3600,
+      collectionName: "sessions",
       mongoOptions: {
-        enableUtf8Validation: true,
         serverSelectionTimeoutMS: 5000,
       },
-    });
-
-    // Session monitoring
-    store.on("create", (sessionId) => {
-      logger.debug("[Session Store] Session created", {
-        id: sessionId?.substring(0, 8),
-      });
-    });
-
-    store.on("destroy", (sessionId) => {
-      logger.debug("[Session Store] Session destroyed", {
-        id: sessionId?.substring(0, 8),
-      });
     });
 
     store.on("error", (error) => {
@@ -53,51 +26,34 @@ const initializeSession = (app) => {
       });
     });
 
-    // Main session configuration
     const sessionConfig = {
-      store,
       secret: process.env.SESSION_SECRET,
-      name: "code_tutor.sid", // Fixed cookie name
+      name: "code_tutor.sid",
       resave: false,
+      rolling: true,
       saveUninitialized: false,
-      proxy: true, // Required for nginx
+      proxy: true,
+      store,
       cookie: {
-        secure: true, // Always true with nginx/https
+        secure: true,
         httpOnly: true,
-        sameSite: "none", // Required for cross-domain
-        maxAge: 24 * 60 * 60 * 1000,
+        sameSite: "none",
+        domain: ".code-tutor.dev31.tech",
         path: "/",
-        domain: "code-tutor.dev31.tech", // Explicit domain
+        maxAge: 24 * 60 * 60 * 1000,
       },
     };
 
-    // Trust proxy for nginx
-    app.set("trust proxy", 1);
-
-    // Log configuration
-    logger.debug("[Session Config] Session configuration", {
-      cookieName: sessionConfig.name,
-      cookieSecure: sessionConfig.cookie.secure,
-      cookieDomain: sessionConfig.cookie.domain,
-      environment: process.env.NODE_ENV,
-    });
-
-    // Apply session middleware
     app.use(session(sessionConfig));
 
-    // Monitoring middleware
-    app.use((req, res, next) => {
-      logger.debug("[Session Config] Session middleware", {
-        sessionID: req.sessionID?.substring(0, 8),
-        isNewSession: req.session.isNew,
-        hasCookie: !!req.headers.cookie,
-      });
-      next();
-    });
-
-    logger.info("[Session Config] Initialization completed", {
+    logger.info("[Session Config] Session initialized with store", {
       store: "MongoDB",
       env: process.env.NODE_ENV,
+      cookieSettings: {
+        secure: sessionConfig.cookie.secure,
+        sameSite: sessionConfig.cookie.sameSite,
+        domain: sessionConfig.cookie.domain,
+      },
     });
   } catch (error) {
     logger.error("[Session Config] Fatal error during initialization", {

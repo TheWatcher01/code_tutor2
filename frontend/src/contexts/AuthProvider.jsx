@@ -1,6 +1,6 @@
 // File path: frontend/contexts/AuthProvider.jsx
 
-import { useEffect, memo } from "react";
+import { useEffect, memo, useMemo } from "react";
 import PropTypes from "prop-types";
 import logger from "@/services/frontendLogger";
 import AuthContext from "./authContext.base";
@@ -9,25 +9,25 @@ import { useAuthStatus } from "@/api/hooks/useAuth.api";
 const AuthProvider = ({ children }) => {
   const { data, error, isLoading, mutate } = useAuthStatus();
 
-  // Log des changements d'état d'authentification
+  // Log authentication status changes
   useEffect(() => {
     if (data) {
-      logger.info("AuthProvider", "Auth status updated", {
+      logger.info("AuthProvider", "Authentication status updated", {
         isAuthenticated: !!data.user,
       });
     }
     if (error) {
-      logger.error("AuthProvider", "Auth error", { error });
+      logger.error("AuthProvider", "Authentication error", { error });
     }
   }, [data, error]);
 
-  const value = {
+  const contextValue = useMemo(() => ({
     user: data?.user || null,
     loading: isLoading,
     error: error,
     isAuthenticated: !!data?.user,
     revalidate: mutate,
-  };
+  }), [data, error, isLoading, mutate]);
 
   if (isLoading) {
     return (
@@ -37,7 +37,7 @@ const AuthProvider = ({ children }) => {
     );
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 };
 
 AuthProvider.propTypes = {

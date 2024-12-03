@@ -8,13 +8,13 @@ import User from "../models/User.model.js";
 const initializePassport = () => {
   logger.info("[Passport] Starting passport initialization");
 
-  // Store only user ID in session for efficiency
+  // Store user ID in session for better performance
   passport.serializeUser((user, done) => {
     logger.debug("[Passport] Serializing user", { userId: user.id });
     done(null, user.id);
   });
 
-  // Retrieve full user object from database using stored ID
+  // Get complete user data from database using the stored ID
   passport.deserializeUser(async (id, done) => {
     try {
       const user = await User.findById(id);
@@ -29,7 +29,7 @@ const initializePassport = () => {
     }
   });
 
-  // Configure GitHub OAuth2 authentication strategy
+  // Setup GitHub OAuth2 strategy with environment variables
   passport.use(
     new GitHubStrategy(
       {
@@ -46,11 +46,11 @@ const initializePassport = () => {
             email: profile.emails?.[0]?.value
           });
 
-          // Find existing user or create new one
+          // Check if user exists in database
           let user = await User.findOne({ githubId: profile.id });
 
           if (!user) {
-            // Create new user with GitHub profile data
+            // Create new user record with GitHub profile information
             user = await User.create({
               githubId: profile.id,
               email: profile.emails?.[0]?.value,

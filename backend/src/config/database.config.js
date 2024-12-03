@@ -17,9 +17,7 @@ const MONGO_OPTIONS = {
   autoIndex: false, // Disable automatic index creation
 };
 
-/**
- * Drop and recreate a collection
- */
+// Drops and recreates a collection if it exists
 async function resetCollection(db, collectionName) {
   try {
     await db.collection(collectionName).drop();
@@ -40,9 +38,7 @@ async function resetCollection(db, collectionName) {
   }
 }
 
-/**
- * Initialize collections and indexes
- */
+// Sets up database connection, collections and indexes
 async function initializeDatabase() {
   let connection = null;
 
@@ -126,7 +122,7 @@ async function initializeDatabase() {
   }
 }
 
-// Cleanup handler
+// Gracefully closes database connection on process termination
 async function cleanup(signal) {
   try {
     if (mongoose.connection.readyState === 1) {
@@ -141,7 +137,7 @@ async function cleanup(signal) {
   }
 }
 
-// Setup process handlers
+// Setup process handlers for graceful shutdown
 process.on("SIGINT", () => cleanup("SIGINT").then(() => process.exit(0)));
 process.on("SIGTERM", () => cleanup("SIGTERM").then(() => process.exit(0)));
 

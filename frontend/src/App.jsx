@@ -1,19 +1,28 @@
 // File path : code_tutor2/frontend/src/App.jsx
 
-import { useEffect } from "react";
+import { useEffect, memo } from "react";
 import React from "react";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import PropTypes from "prop-types";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/contexts";
 import { ProtectedRoute } from "@/components/auth";
 import { ThemeProvider } from "@/components/theme-provider";
+import { useAuthStatus } from "@/api/hooks/useAuth.api";
+import { SwrProvider } from "@/api/swr.config";
+import { useToast } from "@/hooks/use-toast";
 import Home from "@/pages/Home";
 import Playground from "@/pages/Playground";
 import logger from "@/services/frontendLogger";
 
 // Component that logs route changes
-const RouteLogger = () => {
+const RouteLogger = memo(() => {
   const location = useLocation();
 
   useEffect(() => {
@@ -24,106 +33,148 @@ const RouteLogger = () => {
   }, [location]);
 
   return null;
-};
+});
+
+RouteLogger.displayName = "RouteLogger";
 
 // Component that handles GitHub OAuth callback
-const GitHubCallback = () => {
+const GitHubCallback = memo(() => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { data: authData, error, mutate } = useAuthStatus();
 
+  // Effect for mounting/unmounting
   useEffect(() => {
-    logger.info("GitHubCallback", "Processing GitHub OAuth callback", {
+    logger.debug("GitHubCallback", "Component mounted", {
+      pathname: location.pathname,
       search: location.search,
     });
 
-    // Check auth status and redirect accordingly
-    fetch(`${import.meta.env.VITE_API_URL}/auth/status`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.isAuthenticated) {
-          logger.info(
-            "GitHubCallback",
-            "Authentication successful, redirecting"
-          );
-          navigate("/playground");
-        } else {
-          logger.error("GitHubCallback", "Authentication failed");
-          navigate("/?error=auth_failed");
-        }
-      })
-      .catch((error) => {
-        logger.error("GitHubCallback", "Error checking auth status", { error });
-        navigate("/?error=auth_failed");
+    // Immediately revalidate the authentication status
+    mutate();
+
+    return () => {
+      logger.debug("GitHubCallback", "Component unmounting");
+    };
+  }, [location, mutate]);
+
+  // Main effect for handling authentication
+  useEffect(() => {
+    logger.info("GitHubCallback", "Authentication status check", {
+      authDataExists: !!authData,
+      isAuthenticated: authData?.isAuthenticated,
+      hasError: !!error,
+      user: authData?.user,
+      searchParams: location.search,
+    });
+
+    if (error) {
+      logger.error("GitHubCallback", "Error checking auth status", { error });
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "The connection with GitHub failed. Please try again.",
       });
-  }, [location.search, navigate]);
+      navigate("/", { replace: true });
+      return;
+    }
+
+    if (authData) {
+      if (authData.isAuthenticated && authData.user) {
+        logger.info(
+          "GitHubCallback",
+          "Authentication successful, redirecting",
+          {
+            userId: authData.user.id,
+          }
+        );
+        navigate("/playground", { replace: true });
+      } else {
+        logger.error("GitHubCallback", "Authentication failed - No user data");
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: "The connection failed. Please try again.",
+        });
+        navigate("/", { replace: true });
+      }
+    }
+  }, [authData, error, location.search, navigate, toast]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center">
         <h2 className="text-xl font-semibold mb-2">Connecting...</h2>
-        <p className="text-muted-foreground">Please wait</p>
+        <p className="text-muted-foreground">
+          Please wait while connecting to GitHub
+        </p>
       </div>
     </div>
   );
-};
+});
+
+GitHubCallback.displayName = "GitHubCallback";
 
 // Main application component
-const AppComponent = () => {
+const AppComponent = memo(() => {
   useEffect(() => {
     logger.info("App", "Application initialized", {
       environment: import.meta.env.MODE,
       apiUrl: import.meta.env.VITE_API_URL,
     });
-
-    return () => {
-      logger.debug("App", "Application unmounting");
-    };
   }, []);
 
   return (
-    <BrowserRouter       future={{
-      v7_startTransition: true,
-      v7_relativeSplatPath: true,
-    }}
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
     >
-      <ThemeProvider defaultTheme="dark" storageKey="code-tutor-theme">
-        <AuthProvider>
-          <RouteLogger />
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/auth/github/callback" element={<GitHubCallback />} />
-            <Route
-              path="/playground"
-              element={
-                <ProtectedRoute>
-                  <Playground />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="*"
-              element={
-                <div className="min-h-screen flex items-center justify-center">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-bold mb-2">
-                      Page Not Found
-                    </h2>
-                    <p className="text-muted-foreground">
-                      The page you are looking for does not exist.
-                    </p>
+      <SwrProvider>
+        <ThemeProvider defaultTheme="dark" storageKey="code-tutor-theme">
+          <AuthProvider>
+            <RouteLogger />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route
+                path="/auth/github/callback"
+                element={<GitHubCallback />}
+              />
+              <Route
+                path="/playground"
+                element={
+                  <ProtectedRoute>
+                    <Playground />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <div className="min-h-screen flex items-center justify-center">
+                    <div className="text-center">
+                      <h2 className="text-2xl font-bold mb-2">
+                        Page Not Found
+                      </h2>
+                      <p className="text-muted-foreground">
+                        The page you are looking for does not exist.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              }
-            />
-          </Routes>
-          <Toaster />
-        </AuthProvider>
-      </ThemeProvider>
+                }
+              />
+            </Routes>
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
+      </SwrProvider>
     </BrowserRouter>
   );
-};
+});
+
+AppComponent.displayName = "AppComponent";
 
 // Component that catches and handles React errors
 class ErrorBoundary extends React.Component {
@@ -149,11 +200,10 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
           <div className="text-center p-8 max-w-md">
-            <h2 className="text-2xl font-bold mb-4">
-              Something went wrong
-            </h2>
+            <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
             <p className="text-muted-foreground mb-4">
-              An unexpected error occurred. Please refresh the page or try again later.
+              An unexpected error occurred. Please refresh the page or try again
+              later.
             </p>
             {import.meta.env.DEV && this.state.error && (
               <pre className="text-sm text-left bg-muted p-4 rounded overflow-auto max-h-48">
@@ -179,10 +229,12 @@ ErrorBoundary.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-export default function App() {
+const App = () => {
   return (
     <ErrorBoundary>
       <AppComponent />
     </ErrorBoundary>
   );
-}
+};
+
+export default App;

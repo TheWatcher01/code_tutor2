@@ -1,14 +1,16 @@
 // File path : code_tutor2/backend/src/services/backendLogger.js
 
+// Import required dependencies
 import winston from "winston";
 import path from "path";
-import DailyRotateFile from "winston-daily-rotate-file";
+import DailyRotateFile from "winston-daily-rotate-file"; 
 import { v4 as uuidv4 } from "uuid";
 import callsites from "callsites";
 
+// BackendLogger class for handling all logging functionality
 class BackendLogger {
   constructor() {
-    // Environment variables with defaults
+    // Environment variables with defaults for logger configuration
     this.isDevelopment = process.env.NODE_ENV === "development";
     this.config = {
       logLevel:
@@ -31,6 +33,7 @@ class BackendLogger {
       alertWebhook: process.env.$ALERT_WEBHOOK,
     };
 
+    // Define logging levels with numeric priorities
     this.LOG_LEVELS = {
       error: 0,
       warn: 1,
@@ -42,7 +45,7 @@ class BackendLogger {
       performance: 7,
     };
 
-    // Performance metrics with expanded tracking
+    // Initialize performance metrics tracking
     this.metrics = {
       requestCount: 0,
       errorCount: 0,
@@ -57,12 +60,13 @@ class BackendLogger {
       userStats: new Map(),
     };
 
+    // Create logger instance and start monitoring
     this.logger = this.createLogger();
     this.startMetricsReporting();
     this.setupMemoryMonitoring();
   }
 
-  // Gets calling file and function info
+  // Retrieves information about the calling file and function
   getCallerInfo() {
     const sites = callsites();
     const caller = sites[2]; // Skip logger methods
@@ -73,11 +77,13 @@ class BackendLogger {
     };
   }
 
+  // Sets up periodic memory usage monitoring
   setupMemoryMonitoring() {
     setInterval(() => {
       const used = process.memoryUsage();
       const memoryUsageMB = Math.round(used.heapUsed / 1024 / 1024);
 
+      // Track memory usage history
       this.metrics.memoryUsage.history.push({
         timestamp: new Date(),
         usage: memoryUsageMB,
@@ -88,12 +94,12 @@ class BackendLogger {
         this.metrics.memoryUsage.history.shift();
       }
 
-      // Update peak memory
+      // Update peak memory usage
       if (memoryUsageMB > this.metrics.memoryUsage.peak) {
         this.metrics.memoryUsage.peak = memoryUsageMB;
       }
 
-      // Alert on high memory usage
+      // Trigger warning if memory usage exceeds threshold
       if (memoryUsageMB > this.config.memoryThreshold) {
         this.warn("Memory", "High memory usage detected", {
           current: memoryUsageMB,
@@ -101,19 +107,20 @@ class BackendLogger {
           peak: this.metrics.memoryUsage.peak,
         });
       }
-    }, 60000); // Every minute
+    }, 60000); // Check every minute
   }
 
-  // Enhanced middleware for request logging
+  // Middleware for logging HTTP requests with detailed metrics
   requestLogger(req, res, next) {
     const start = Date.now();
     const correlationId = uuidv4();
     req.correlationId = correlationId;
 
-    // Update request metrics
+    // Track request metrics
     this.metrics.requestCount++;
     const endpoint = `${req.method} ${req.route?.path || req.path}`;
 
+    // Initialize endpoint statistics if not exists
     if (!this.metrics.endpointStats.has(endpoint)) {
       this.metrics.endpointStats.set(endpoint, {
         count: 0,
@@ -123,6 +130,7 @@ class BackendLogger {
       });
     }
 
+    // Prepare context for request logging
     const logContext = {
       correlationId,
       method: req.method,
@@ -138,6 +146,7 @@ class BackendLogger {
 
     this.http("Request", "Incoming request", logContext);
 
+    // Handle response completion
     res.on("finish", () => {
       const duration = Date.now() - start;
       const endpointStats = this.metrics.endpointStats.get(endpoint);
@@ -145,6 +154,7 @@ class BackendLogger {
       endpointStats.totalTime += duration;
       endpointStats.lastAccessed = new Date();
 
+      // Prepare response context with timing information
       const responseContext = {
         ...logContext,
         status: res.statusCode,
@@ -156,7 +166,7 @@ class BackendLogger {
         ),
       };
 
-      // Performance tracking
+      // Track slow requests and performance issues
       if (duration > this.config.slowRequestThreshold) {
         this.metrics.slowRequests++;
         endpointStats.slowRequests = (endpointStats.slowRequests || 0) + 1;
@@ -174,13 +184,13 @@ class BackendLogger {
         });
       }
 
-      // Error tracking
+      // Handle error responses and tracking
       if (res.statusCode >= 400) {
         this.metrics.errorCount++;
         endpointStats.errors++;
         this.error("Request", `Request failed`, responseContext);
 
-        // Alert on high error rate
+        // Alert on high error rates
         if (this.metrics.errorCount % this.config.errorAlertThreshold === 0) {
           this.alert("High error rate detected", {
             totalErrors: this.metrics.errorCount,
@@ -191,7 +201,7 @@ class BackendLogger {
         this.info("Request", `Request completed`, responseContext);
       }
 
-      // User stats tracking
+      // Track per-user statistics
       if (req.user?.id) {
         if (!this.metrics.userStats.has(req.user.id)) {
           this.metrics.userStats.set(req.user.id, {
@@ -212,12 +222,12 @@ class BackendLogger {
     next();
   }
 
-  // Alert system for critical issues
+  // Send alerts for critical issues
   alert(message, data) {
     this.error("Alert", message, data);
 
+    // Send alert to external webhook if configured
     if (this.config.alertWebhook) {
-      // Send to external monitoring
       fetch(this.config.alertWebhook, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -233,7 +243,7 @@ class BackendLogger {
     }
   }
 
-  // Performance logging for specific operations
+  // Log performance metrics for specific operations
   performance(operation, duration, meta = {}) {
     this._logWithCorrelation(
       "performance",
@@ -247,6 +257,7 @@ class BackendLogger {
     );
   }
 
+  // Create Winston logger instance with configured transports
   createLogger() {
     require("fs").mkdirSync(this.config.logDir, { recursive: true });
 
@@ -278,6 +289,7 @@ class BackendLogger {
     });
   }
 
+  // Configure log format based on settings
   getLogFormat() {
     return winston.format.combine(
       winston.format.timestamp({
@@ -291,6 +303,7 @@ class BackendLogger {
     );
   }
 
+  // Configure and return logging transports
   getTransports(rotateConfig) {
     const transports = [
       // Error logs
@@ -318,6 +331,7 @@ class BackendLogger {
       }),
     ];
 
+    // Add console transport in development
     if (this.isDevelopment) {
       transports.push(
         new winston.transports.Console({
@@ -333,6 +347,7 @@ class BackendLogger {
     return transports;
   }
 
+  // Format console output for better readability
   formatConsoleOutput({ level, message, timestamp, correlationId, metadata, caller, ...meta }) {
     let output = `[${timestamp}] [${level}]`;
     if (correlationId) {
@@ -358,6 +373,7 @@ class BackendLogger {
     return output;
   }
 
+  // Start periodic metrics reporting
   startMetricsReporting() {
     setInterval(() => {
       this.reportMetrics();
@@ -365,30 +381,32 @@ class BackendLogger {
     }, this.config.metricsInterval);
   }
 
+  // Clean up old metrics data
   cleanupOldMetrics() {
     const now = Date.now();
     const retentionPeriod = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-    // Clean old endpoint stats
+    // Remove old endpoint statistics
     for (const [endpoint, stats] of this.metrics.endpointStats.entries()) {
       if (stats.lastAccessed && (now - stats.lastAccessed.getTime()) > retentionPeriod) {
         this.metrics.endpointStats.delete(endpoint);
       }
     }
 
-    // Clean old user stats
+    // Remove old user statistics
     for (const [userId, stats] of this.metrics.userStats.entries()) {
       if (stats.lastAccess && (now - stats.lastAccess.getTime()) > retentionPeriod) {
         this.metrics.userStats.delete(userId);
       }
     }
 
-    // Trim error history
+    // Limit error history size
     if (this.metrics.lastErrors.length > this.config.maxStackSize) {
       this.metrics.lastErrors = this.metrics.lastErrors.slice(-this.config.maxStackSize);
     }
   }
 
+  // Report current metrics
   reportMetrics() {
     const currentMetrics = {
       ...this.metrics,
@@ -401,13 +419,14 @@ class BackendLogger {
 
     this.logger.log("metrics", "System metrics", currentMetrics);
 
-    // Reset counters after reporting
+    // Reset counters for next interval
     this.metrics.requestCount = 0;
     this.metrics.errorCount = 0;
     this.metrics.slowRequests = 0;
     this.metrics.averageResponseTime = 0;
   }
 
+  // Log request metrics
   logMetrics(context = {}) {
     const callerInfo = this.getCallerInfo();
     this.logger.log("metrics", "Request metrics", {
@@ -417,11 +436,12 @@ class BackendLogger {
     });
   }
 
+  // Log error messages with tracking
   error(context, message, meta = {}) {
     const callerInfo = this.getCallerInfo();
     this._logWithCorrelation("error", context, message, { ...meta, caller: callerInfo });
     
-    // Track error for metrics
+    // Track error in metrics
     if (this.metrics.lastErrors.length >= this.config.maxStackSize) {
       this.metrics.lastErrors.shift();
     }
@@ -434,28 +454,34 @@ class BackendLogger {
     });
   }
 
+  // Log warning messages
   warn(context, message, meta = {}) {
     this._logWithCorrelation("warn", context, message, { ...meta, caller: this.getCallerInfo() });
   }
 
+  // Log informational messages
   info(context, message, meta = {}) {
     this._logWithCorrelation("info", context, message, { ...meta, caller: this.getCallerInfo() });
   }
 
+  // Log debug messages
   debug(context, message, meta = {}) {
     this._logWithCorrelation("debug", context, message, { ...meta, caller: this.getCallerInfo() });
   }
 
+  // Log HTTP request messages
   http(context, message, meta = {}) {
     this._logWithCorrelation("http", context, message, { ...meta, caller: this.getCallerInfo() });
   }
 
+  // Log trace messages (development or when explicitly enabled)
   trace(context, message, meta = {}) {
     if (this.isDevelopment || this.config.includeTrace) {
       this._logWithCorrelation("trace", context, message, { ...meta, caller: this.getCallerInfo() });
     }
   }
 
+  // Internal method for consistent log formatting with correlation IDs
   _logWithCorrelation(level, context, message, meta = {}) {
     const correlationId = meta.correlationId || uuidv4();
     const timestamp = new Date().toISOString();
@@ -470,7 +496,7 @@ class BackendLogger {
   }
 }
 
-// Custom colors with additional levels
+// Define custom colors for different log levels
 winston.addColors({
   error: "red",
   warn: "yellow",
@@ -482,5 +508,5 @@ winston.addColors({
   performance: "white",
 });
 
-// Export a single instance
+// Export singleton instance
 export default new BackendLogger();

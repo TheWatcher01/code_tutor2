@@ -13,27 +13,29 @@ import mongoose from "mongoose";
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Initialize Express application
 const initialize = async () => {
   try {
     logger.info("[Server] Starting initialization");
 
-    // 1. Database
+    // Trust proxy pour Nginx
+    app.set("trust proxy", 1);
+
+    // 1. Database initialization
     await initializeDatabase();
     logger.info("[Server] Database initialized");
 
-    // 2. Express middleware & CORS
+    // 2. Express middleware
     initializeApp(app);
     logger.info("[Server] Core middleware initialized");
 
-    // 3. Initialize session BEFORE passport
+    // 3. Session initialization
     await initializeSession(app);
     logger.info("[Server] Session initialized");
 
-    // 4. Initialize passport and its middleware
+    // 4. Passport configuration
     app.use(passport.initialize());
     app.use(passport.session());
-    initializePassport(); // Don't pass app as parameter
+    initializePassport();
     logger.info("[Server] Passport initialized");
 
     // 5. Routes
@@ -47,11 +49,13 @@ const initialize = async () => {
   }
 };
 
-// Start the server
+// Start the Express server and set up graceful shutdown
 const startServer = async () => {
   try {
+    // Initialize all components before starting server
     await initialize();
 
+    // Start listening on configured port
     const server = app.listen(port, () => {
       logger.info("Server", "Server is running", {
         port,
@@ -60,8 +64,10 @@ const startServer = async () => {
       });
     });
 
+    // Handle graceful shutdown on SIGTERM and SIGINT signals
     const shutdown = async (signal) => {
       try {
+        // Close HTTP server and database connections
         await new Promise((resolve) => server.close(resolve));
         await mongoose.connection.close();
         logger.info("Server", "Cleanup completed");
@@ -72,6 +78,7 @@ const startServer = async () => {
       }
     };
 
+    // Register signal handlers for graceful shutdown
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGINT", () => shutdown("SIGINT"));
   } catch (error) {

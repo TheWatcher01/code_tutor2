@@ -2,6 +2,7 @@
 
 import logger from "../services/backendLogger.js";
 
+// Middleware to check if user is authenticated before allowing access to protected routes
 export const isAuthenticated = (req, res, next) => {
   logger.debug("Checking authentication status", {
     path: req.path,
@@ -22,6 +23,7 @@ export const isAuthenticated = (req, res, next) => {
   res.status(401).json({ error: "Unauthorized access" });
 };
 
+// Global error handler for authentication-related errors
 export const handleAuthError = (err, req, res, next) => {
   logger.error("Authentication error", {
     error: err.message,
@@ -30,6 +32,7 @@ export const handleAuthError = (err, req, res, next) => {
     user: req.user?.id,
   });
 
+  // Return detailed error in development, generic message in production
   res.status(500).json({
     error: "Authentication error occurred",
     message:
@@ -39,6 +42,7 @@ export const handleAuthError = (err, req, res, next) => {
   });
 };
 
+// Middleware to validate session integrity and clean up invalid sessions
 export const sessionChecker = (req, res, next) => {
   logger.debug("Session check middleware", {
     hasSession: !!req.session,
@@ -52,7 +56,7 @@ export const sessionChecker = (req, res, next) => {
       ip: req.ip,
     });
 
-    // Clean up invalid session if it exists
+    // Destroy invalid session if it exists
     if (req.session) {
       req.session.destroy((err) => {
         if (err) {
@@ -70,22 +74,25 @@ export const sessionChecker = (req, res, next) => {
   next();
 };
 
-// Implements rate limiting for authentication routes to prevent brute force attacks
+// Rate limiting middleware to prevent brute force attacks on authentication routes
 export const authRateLimiter = (req, res, next) => {
+  // Configure rate limiting parameters
   const MAX_ATTEMPTS = 5;
   const WINDOW_MS = 15 * 60 * 1000; // 15 minutes window
 
+  // Initialize or get attempt counter for current session
   req.session.authAttempts = req.session.authAttempts || {
     count: 0,
     resetTime: Date.now() + WINDOW_MS,
   };
 
-  // Reset attempt counter if time window has expired
+  // Reset counter if time window has expired
   if (Date.now() > req.session.authAttempts.resetTime) {
     req.session.authAttempts.count = 0;
     req.session.authAttempts.resetTime = Date.now() + WINDOW_MS;
   }
 
+  // Check if maximum attempts exceeded
   if (req.session.authAttempts.count >= MAX_ATTEMPTS) {
     logger.warn("Rate limit exceeded for authentication", {
       ip: req.ip,
@@ -97,6 +104,7 @@ export const authRateLimiter = (req, res, next) => {
     });
   }
 
+  // Increment attempt counter and continue
   req.session.authAttempts.count++;
   next();
 };
