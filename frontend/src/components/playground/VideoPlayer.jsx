@@ -7,11 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Play, Pause, Volume2, VolumeX } from "lucide-react";
 import FrontendLogger from "@/services/frontendLogger";
 
+// VideoPlayer component for handling video playback
 const VideoPlayer = ({ videoUrl, title }) => {
+  // State for managing video playback and mute status
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef(null);
 
+  // Effect for logging component mount and unmount events
   useEffect(() => {
     FrontendLogger.info("VideoPlayer", "Component mounted", { videoUrl, title });
     return () => {
@@ -19,6 +22,7 @@ const VideoPlayer = ({ videoUrl, title }) => {
     };
   }, [videoUrl, title]);
 
+  // Function to toggle video playback
   const togglePlay = () => {
     const video = videoRef.current;
     if (isPlaying) {
@@ -33,6 +37,7 @@ const VideoPlayer = ({ videoUrl, title }) => {
     setIsPlaying(!isPlaying);
   };
 
+  // Function to toggle video mute
   const toggleMute = () => {
     const video = videoRef.current;
     video.muted = !video.muted;
@@ -40,10 +45,12 @@ const VideoPlayer = ({ videoUrl, title }) => {
     FrontendLogger.debug("VideoPlayer", `Video ${video.muted ? 'muted' : 'unmuted'}`);
   };
 
+  // Function to handle video playback error
   const handleVideoError = (error) => {
     FrontendLogger.error("VideoPlayer", "Video playback error", error);
   };
 
+  // JSX for rendering the video player
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="p-4">
@@ -101,6 +108,7 @@ const VideoPlayer = ({ videoUrl, title }) => {
   );
 };
 
+// PropTypes for the VideoPlayer component
 VideoPlayer.propTypes = {
   videoUrl: PropTypes.string.isRequired,
   title: PropTypes.string,

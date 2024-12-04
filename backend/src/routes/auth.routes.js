@@ -4,12 +4,15 @@ import { Router } from "express";
 import passport from "passport";
 import logger from "../services/backendLogger.js";
 
+// Creating a new router instance
 const router = Router();
 
+// Route to check authentication status
 router.get("/status", (req, res) => {
   const sessionData = req.session;
   const isAuth = req.isAuthenticated();
 
+  // Logging the status check
   logger.debug("[Auth] Status check", {
     isAuthenticated: isAuth,
     userId: req.user?.id,
@@ -20,7 +23,7 @@ router.get("/status", (req, res) => {
     },
   });
 
-  // Response with detailed information
+  // Responding with detailed information
   res.json({
     isAuthenticated: isAuth,
     user: isAuth
@@ -35,6 +38,7 @@ router.get("/status", (req, res) => {
   });
 });
 
+// Route to start GitHub authentication
 router.get(
   "/github",
   (req, res, next) => {
@@ -51,6 +55,7 @@ router.get(
   })
 );
 
+// Route to handle GitHub authentication callback
 router.get(
   "/github/callback",
   (req, res, next) => {
@@ -89,6 +94,7 @@ router.get(
   }
 );
 
+// Route to handle user logout
 router.post("/logout", (req, res) => {
   const userId = req.user?.id;
   const sessionID = req.sessionID;

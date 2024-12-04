@@ -49,6 +49,7 @@
     "react-query": "^3.39.3",
     "react-resizable-panels": "^2.1.7",
     "react-router-dom": "^6.28.0",
+    "react-spinners": "^0.14.1",
     "socket.io-client": "^4.8.1",
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.5",

@@ -15,10 +15,14 @@ import logger from "@/services/frontendLogger";
 
 // Constants
 
+// Default height of the editor
 const EDITOR_DEFAULT_HEIGHT = "calc(100vh - 10rem)";
-const PERFORMANCE_THRESHOLD = 100; // ms
-const LAYOUT_PERFORMANCE_THRESHOLD = 16; // ms (1 frame @ 60fps)
+// Performance threshold in milliseconds
+const PERFORMANCE_THRESHOLD = 100;
+// Layout performance threshold in milliseconds
+const LAYOUT_PERFORMANCE_THRESHOLD = 16;
 
+// Options for the editor
 const EDITOR_OPTIONS = {
   minimap: { enabled: false },
   fontSize: 14,
@@ -33,12 +37,14 @@ const EDITOR_OPTIONS = {
   }
 };
 
+// Language options for the editor
 const LANGUAGE_OPTIONS = [
   { value: "javascript", label: "JavaScript" },
   { value: "html", label: "HTML" },
   { value: "css", label: "CSS" },
 ];
 
+// Lazy loading of the Monaco Editor
 const MonacoEditor = lazy(async () => {
   const startTime = performance.now();
   const isDebugMode = import.meta.env.MODE === 'development';
@@ -61,7 +67,7 @@ const MonacoEditor = lazy(async () => {
   }
 });
 
-// Loading component
+// Loading component for the editor
 const EditorSkeleton = memo(() => {
   logger.debug("CodeEditor", "Rendering skeleton loader");
   return (
@@ -73,6 +79,7 @@ const EditorSkeleton = memo(() => {
 
 EditorSkeleton.displayName = "EditorSkeleton";
 
+// CodeEditor component for rendering the code editor
 const CodeEditor = memo(({ onChange, initialValue = "" }) => {
   const [language, setLanguage] = useState("javascript");
   const editorRef = useRef(null);
@@ -89,7 +96,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     overflow: "hidden"
   }), []);
 
-  // Optimized change handler
+  // Optimized change handler for the editor
   const handleEditorChange = useCallback((value) => {
     const now = performance.now();
     
@@ -159,7 +166,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     });
   }, [language, initialValue]);
 
-  // Enhanced error handler
+  // Enhanced error handler for the editor
   const handleEditorError = useCallback((error) => {
     logger.error("CodeEditor", "Editor error occurred", {
       error: error.message,
@@ -172,7 +179,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     });
   }, [language]);
 
-  // Optimized resize handler
+  // Optimized resize handler for the editor
   const handleResize = useCallback((entries) => {
     const now = performance.now();
     
@@ -201,7 +208,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     });
   }, []);
 
-  // Cleanup and monitoring effect
+  // Cleanup and monitoring effect for the editor
   useEffect(() => {
     const mountTime = mountTimeRef.current;
     
@@ -237,6 +244,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
     };
   }, [language, handleResize]);
 
+  // Rendering the code editor
   return (
     <div className="h-full flex flex-col" ref={containerRef}>
       <div className="border-b p-2">
@@ -270,6 +278,7 @@ const CodeEditor = memo(({ onChange, initialValue = "" }) => {
   );
 });
 
+// Define prop types for the CodeEditor component
 CodeEditor.propTypes = {
   onChange: PropTypes.func,
   initialValue: PropTypes.string

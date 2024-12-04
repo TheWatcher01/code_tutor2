@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import FrontendLogger from "@/services/frontendLogger";
 
+// ChatInterface component for handling user and AI chat interactions
 const ChatInterface = () => {
+  // State for managing chat messages and user input
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
 
+  // Effect for logging component mount and unmount events
   useEffect(() => {
     FrontendLogger.info("ChatInterface", "Component mounted");
     return () => {
@@ -18,24 +21,29 @@ const ChatInterface = () => {
     };
   }, []);
 
+  // Function to handle sending messages and simulating AI responses
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
+    // Creating a new message object with user input
     const newMessage = {
       id: Date.now(),
       content: input,
       sender: "user",
     };
 
+    // Logging the user's message
     FrontendLogger.debug("ChatInterface", "User sent a message", { message: input });
 
+    // Updating the state with the new message and clearing the input
     setMessages((prev) => [...prev, newMessage]);
     setInput("");
 
-    // Simulate AI response
+    // Simulating an AI response after a delay
     setTimeout(() => {
       const aiResponse = "I'm here to help you with your code!";
+      // Updating the state with the AI's response
       setMessages((prev) => [
         ...prev,
         {
@@ -44,10 +52,12 @@ const ChatInterface = () => {
           sender: "ai",
         },
       ]);
+      // Logging the AI's response
       FrontendLogger.debug("ChatInterface", "AI response received", { response: aiResponse });
     }, 1000);
   };
 
+  // JSX for rendering the chat interface
   return (
     <div className="flex flex-col h-full">
       <ScrollArea className="flex-1 p-4">

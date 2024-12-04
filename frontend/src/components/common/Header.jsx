@@ -21,11 +21,15 @@ import { Code2 } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
 import logger from "@/services/frontendLogger";
 
+// Header component for rendering the application's header section
 const Header = () => {
+  // Extracting user and authentication status from the useAuth hook
   const { user, isAuthenticated } = useAuth();
 
+  // Logging the event of header rendering with authentication status
   logger.debug("Header", "Rendering header", { isAuthenticated });
 
+  // JSX for rendering the header section
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">

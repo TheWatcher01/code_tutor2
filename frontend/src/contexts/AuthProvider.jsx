@@ -1,47 +1,76 @@
-// File path: frontend/contexts/AuthProvider.jsx
+// File path: frontend/src/contexts/AuthProvider.jsx
 
 import { useEffect, memo, useMemo } from "react";
 import PropTypes from "prop-types";
 import logger from "@/services/frontendLogger";
 import AuthContext from "./authContext.base";
 import { useAuthStatus } from "@/api/hooks/useAuth.api";
+import { BeatLoader } from "react-spinners";
 
-const AuthProvider = ({ children }) => {
+// Memoized component to prevent unnecessary re-renders
+const AuthProvider = memo(({ children }) => {
+  // Using the useAuthStatus hook to get the authentication status
   const { data, error, isLoading, mutate } = useAuthStatus();
 
-  // Log authentication status changes
+  // Effect to log authentication errors or status updates
   useEffect(() => {
-    if (data) {
-      logger.info("AuthProvider", "Authentication status updated", {
-        isAuthenticated: !!data.user,
-      });
-    }
     if (error) {
       logger.error("AuthProvider", "Authentication error", { error });
+    } else if (data) {
+      logger.info("AuthProvider", "Auth status updated", {
+        isAuthenticated: !!data.user,
+        userId: data.user?.id,
+      });
     }
-  }, [data, error]);
+  }, [error, data]);
 
-  const contextValue = useMemo(() => ({
-    user: data?.user || null,
-    loading: isLoading,
-    error: error,
-    isAuthenticated: !!data?.user,
-    revalidate: mutate,
-  }), [data, error, isLoading, mutate]);
+  // Memoized function to compute the authentication state
+  const authState = useMemo(
+    () => ({
+      user: data?.user || null,
+      isAuthenticated: !!data?.user,
+    }),
+    [data?.user]
+  );
 
+  // Memoized function to compute the authentication actions
+  const authActions = useMemo(
+    () => ({
+      revalidate: mutate,
+    }),
+    [mutate]
+  );
+
+  // Memoized function to compute the context value
+  const contextValue = useMemo(
+    () => ({
+      ...authState,
+      ...authActions,
+      loading: isLoading,
+      error,
+    }),
+    [authState, authActions, isLoading, error]
+  );
+
+  // If the authentication is loading, display a loader
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <p>Loading...</p>
+        <BeatLoader color="#4F46E5" size={15} />
       </div>
     );
   }
 
-  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
-};
+  // Providing the context value to the children components
+  return (
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+  );
+});
 
 AuthProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-export default memo(AuthProvider);
+AuthProvider.displayName = "AuthProvider";
+
+export default AuthProvider;

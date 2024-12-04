@@ -14,10 +14,12 @@ import GitHubLoginButton from "./GitHubLoginButton";
 import useAuth from "@/hooks/useAuth";
 import logger from "@/services/frontendLogger";
 
+// Function component for rendering the authentication form
 const AuthForm = () => {
+  // Extracting error state from the useAuth hook
   const { error } = useAuth();
 
-  // Log component mount
+  // Logging the component mount event
   logger.debug("AuthForm", "Auth form component mounted");
 
   return (

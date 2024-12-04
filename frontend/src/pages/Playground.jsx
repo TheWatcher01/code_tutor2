@@ -9,36 +9,26 @@ import {
 } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Play, Code2 } from "lucide-react";
-import VideoPlayer from "@/components/playground/VideoPlayer";
-import ChatInterface from "@/components/playground/ChatInterface";
-import CodeEditor from "@/components/playground/CodeEditor";
+import { Menu, Code2 } from "lucide-react"; // Removed unused icons
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { useMobile } from "@/hooks/use-mobile";
 import useAuth from "@/hooks/useAuth";
 import logger from "@/services/frontendLogger";
 import { LogoutButton } from "@/components/auth";
 
-// Constants
+// Constants simplified (removed preview-related config)
 const PANEL_CONFIG = {
   INITIAL_SIZES: {
-    SIDEBAR: 25,
-    EDITOR: 50,
-    PREVIEW: 25,
+    SIDEBAR: 30,
+    MAIN: 70,
   },
   MIN_SIZES: {
     SIDEBAR: 20,
-    EDITOR: 30,
-    PREVIEW: 20,
+    MAIN: 50,
   },
 };
 
-// Memoized components for performance optimization
-const MemoizedVideoPlayer = memo(VideoPlayer);
-const MemoizedChatInterface = memo(ChatInterface);
-const MemoizedCodeEditor = memo(CodeEditor);
-
-// Navbar Component with PropTypes
+// Simplified Navbar Component
 const Navbar = memo(({ isMobile }) => {
   return (
     <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -65,12 +55,10 @@ Navbar.displayName = "Navbar";
 
 const Playground = () => {
   const { user } = useAuth();
-  const [code, setCode] = useState("");
-  const [showPreview, setShowPreview] = useState(true);
-  const [activeTab, setActiveTab] = useState("video");
+  const [activeTab, setActiveTab] = useState("chat");
   const isMobile = useMobile();
 
-  // Initialize logging
+  // Simplified logging
   useEffect(() => {
     logger.info("Playground", "Component mounted", {
       userId: user?.id,
@@ -82,50 +70,13 @@ const Playground = () => {
     };
   }, [user, isMobile]);
 
-  // Code change handler
-  const handleCodeChange = useCallback((newCode) => {
-    setCode(newCode);
-    logger.debug("Playground", "Code updated", {
-      codeLength: newCode.length,
-    });
-  }, []);
-
-  // Preview update handler
-  useEffect(() => {
-    if (!code || !showPreview) return;
-
-    const updatePreview = () => {
-      try {
-        const iframe = document.getElementById("preview-iframe");
-        if (iframe) {
-          const doc = iframe.contentDocument || iframe.contentWindow.document;
-          doc.open();
-          doc.write(code);
-          doc.close();
-          logger.debug("Playground", "Preview updated successfully");
-        }
-      } catch (error) {
-        logger.error("Playground", "Preview update failed", { error });
-      }
-    };
-
-    const timeoutId = setTimeout(updatePreview, 1000); // Debounce preview updates
-    return () => clearTimeout(timeoutId);
-  }, [code, showPreview]);
-
-  // Tab change handler
+  // Simplified tab change handler
   const handleTabChange = useCallback((value) => {
     setActiveTab(value);
     logger.debug("Playground", "Tab changed", { newTab: value });
   }, []);
 
-  // Preview toggle handler
-  const togglePreview = useCallback((show) => {
-    setShowPreview(show);
-    logger.debug("Playground", "Preview toggled", { visible: show });
-  }, []);
-
-  // Desktop layout component
+  // Simplified Desktop layout
   const DesktopLayout = useCallback(
     () => (
       <div className="flex flex-col h-screen w-screen">
@@ -141,17 +92,12 @@ const Playground = () => {
               className="h-full"
             >
               <TabsList className="w-full justify-start">
-                <TabsTrigger value="video">Vidéo</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
               </TabsList>
-              <TabsContent value="video" className="h-[calc(100%-40px)]">
-                <MemoizedVideoPlayer
-                  videoUrl="https://exemple.com/video.mp4"
-                  title="Introduction à JavaScript"
-                />
-              </TabsContent>
               <TabsContent value="chat" className="h-[calc(100%-40px)]">
-                <MemoizedChatInterface />
+                <div className="p-4 text-center text-muted-foreground">
+                  Chat Interface Placeholder
+                </div>
               </TabsContent>
             </Tabs>
           </ResizablePanel>
@@ -159,71 +105,27 @@ const Playground = () => {
           <ResizableHandle />
 
           <ResizablePanel
-            defaultSize={PANEL_CONFIG.INITIAL_SIZES.EDITOR}
-            minSize={PANEL_CONFIG.MIN_SIZES.EDITOR}
+            defaultSize={PANEL_CONFIG.INITIAL_SIZES.MAIN}
+            minSize={PANEL_CONFIG.MIN_SIZES.MAIN}
           >
             <div className="h-full flex flex-col">
               <div className="border-b p-2 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  {!showPreview && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => togglePreview(true)}
-                      aria-label="Show preview"
-                    >
-                      <Play className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-                <span className="font-medium flex-1 text-center">Éditeur</span>
+                <span className="font-medium flex-1 text-center">
+                  Main Content Area
+                </span>
               </div>
-              <div className="flex-1">
-                <MemoizedCodeEditor onChange={handleCodeChange} />
+              <div className="flex-1 p-4 text-center text-muted-foreground">
+                Content Placeholder
               </div>
             </div>
           </ResizablePanel>
-
-          {showPreview && (
-            <>
-              <ResizableHandle />
-              <ResizablePanel
-                defaultSize={PANEL_CONFIG.INITIAL_SIZES.PREVIEW}
-                minSize={PANEL_CONFIG.MIN_SIZES.PREVIEW}
-              >
-                <div className="h-full flex flex-col">
-                  <div className="border-b p-2 flex justify-between items-center">
-                    <h3 className="font-medium text-center flex-1">
-                      Prévisualisation
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => togglePreview(false)}
-                      aria-label="Hide preview"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex-1 p-4">
-                    <iframe
-                      id="preview-iframe"
-                      className="w-full h-full border rounded-lg bg-background"
-                      title="Code preview"
-                      sandbox="allow-scripts"
-                    />
-                  </div>
-                </div>
-              </ResizablePanel>
-            </>
-          )}
         </ResizablePanelGroup>
       </div>
     ),
-    [activeTab, handleTabChange, showPreview, togglePreview, handleCodeChange]
+    [activeTab, handleTabChange]
   );
 
-  // Mobile layout component
+  // Simplified Mobile layout
   const MobileLayout = useCallback(
     () => (
       <div className="h-screen flex flex-col">
@@ -245,17 +147,12 @@ const Playground = () => {
                     className="h-full"
                   >
                     <TabsList className="w-full justify-start">
-                      <TabsTrigger value="video">Vidéo</TabsTrigger>
                       <TabsTrigger value="chat">Chat</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="video" className="h-[calc(100%-40px)]">
-                      <MemoizedVideoPlayer
-                        videoUrl="https://exemple.com/video.mp4"
-                        title="Introduction à JavaScript"
-                      />
-                    </TabsContent>
                     <TabsContent value="chat" className="h-[calc(100%-40px)]">
-                      <MemoizedChatInterface />
+                      <div className="p-4 text-center text-muted-foreground">
+                        Chat Interface Placeholder
+                      </div>
                     </TabsContent>
                   </Tabs>
                 </div>
@@ -263,18 +160,17 @@ const Playground = () => {
             </Drawer>
           </div>
         </div>
-        <div className="flex-1">
-          <MemoizedCodeEditor onChange={handleCodeChange} />
+        <div className="flex-1 p-4 text-center text-muted-foreground">
+          Mobile Content Placeholder
         </div>
       </div>
     ),
-    [activeTab, handleTabChange, handleCodeChange]
+    [activeTab, handleTabChange]
   );
 
   return isMobile ? <MobileLayout /> : <DesktopLayout />;
 };
 
-// Optimize component display name for React DevTools
 Playground.displayName = "Playground";
 
 export default memo(Playground);

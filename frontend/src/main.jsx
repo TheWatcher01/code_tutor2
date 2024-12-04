@@ -21,6 +21,70 @@ if (missingEnvVars.length > 0) {
   throw new Error(error);
 }
 
+// Signal handlers for graceful shutdown
+const handleShutdown = async (signal) => {
+  try {
+    logger.info("Shutdown", `Received ${signal} signal, starting cleanup...`);
+
+    // Cleanup tasks
+    // 1. Cancel any pending network requests
+    if (window.navigator.serviceWorker) {
+      const registration =
+        await window.navigator.serviceWorker.getRegistration();
+      if (registration) {
+        await registration.unregister();
+        logger.info("Shutdown", "Service worker unregistered");
+      }
+    }
+
+    // 2. Close any open WebSocket connections
+    if (window.WebSocket) {
+      const sockets = Array.from(document.querySelectorAll("*"))
+        .filter((el) => el._socket instanceof WebSocket)
+        .map((el) => el._socket);
+
+      sockets.forEach((socket) => {
+        socket.close(1000, "Application shutting down");
+        logger.info("Shutdown", "WebSocket connection closed");
+      });
+    }
+
+    // 3. Clear any application storage if needed
+    try {
+      localStorage.removeItem("app_logs");
+      sessionStorage.clear();
+      logger.info("Shutdown", "Storage cleared");
+    } catch (error) {
+      logger.warn("Shutdown", "Error clearing storage", { error });
+    }
+
+    // 4. Log final shutdown message
+    logger.info("Shutdown", "Cleanup completed successfully");
+
+    // 5. Allow time for final logs to be written
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  } catch (error) {
+    logger.error("Shutdown", "Error during cleanup", { error });
+  }
+};
+
+// Register global shutdown handlers
+if (import.meta.env.DEV) {
+  // Handle beforeunload event
+  window.addEventListener("beforeunload", () => handleShutdown("BEFOREUNLOAD"));
+
+  // Handle Vite HMR and shutdown events
+  if (import.meta.hot) {
+    import.meta.hot.on("vite:beforeUpdate", () => handleShutdown("HMR_UPDATE"));
+    import.meta.hot.on("vite:beforeFullReload", () =>
+      handleShutdown("HMR_RELOAD")
+    );
+    import.meta.hot.on("vite:beforeClose", async () => {
+      await handleShutdown("VITE_CLOSE");
+    });
+  }
+}
+
 // Initialize application
 const initializeApp = async () => {
   try {

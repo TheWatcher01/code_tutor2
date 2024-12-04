@@ -1,6 +1,5 @@
 // File path : code_tutor2/backend/src/services/user.service.js
 
-// Import required dependencies
 import logger from "./backendLogger.js";
 import User from "../models/User.model.js";
 

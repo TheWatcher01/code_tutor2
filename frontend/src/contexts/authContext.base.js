@@ -2,6 +2,7 @@
 
 import { createContext } from "react";
 
+// Creating a new context for the authentication
 const AuthContext = createContext({
   user: null,
   loading: false,
@@ -10,6 +11,7 @@ const AuthContext = createContext({
   revalidate: () => Promise.resolve(),
 });
 
+// Setting the display name of the context
 AuthContext.displayName = "AuthContext";
 
 export default AuthContext;
